@@ -6,546 +6,200 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Сканер</title>
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
 <style>
 :root {
-  --bg: #0f0f0f;
-  --surface: #1a1a1a;
-  --surface2: #252525;
-  --border: #2e2e2e;
-  --accent: #00e5a0;
-  --accent-dim: #00a070;
-  --text: #f0f0f0;
-  --muted: #777;
-  --danger: #ff4d4d;
-  --orange: #ff8c42;
-  --blue: #4da6ff;
-  --radius: 14px;
+  --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#252525; --border:#2e2e2e;
+  --accent:#00e5a0; --accent-dim:#00a070; --text:#f0f0f0; --muted:#777;
+  --danger:#ff4d4d; --orange:#ff8c42; --blue:#4da6ff; --radius:14px;
 }
-
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-body {
-  font-family: 'SF Pro Display', -apple-system, 'Segoe UI', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ===== HOME SCREEN ===== */
-.home {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 24px;
-  gap: 20px;
-}
-
-.home-logo {
-  width: 72px; height: 72px;
-  background: var(--accent);
-  border-radius: 20px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 8px;
-}
-
-.home-title {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  text-align: center;
-}
-
-.home-sub {
-  font-size: 15px;
-  color: var(--muted);
-  text-align: center;
-  margin-top: -10px;
-  margin-bottom: 12px;
-}
-
-.mode-btn {
-  width: 100%;
-  max-width: 360px;
-  padding: 20px 24px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.mode-btn:active { transform: scale(0.97); background: var(--surface2); }
-
-.mode-icon {
-  width: 48px; height: 48px;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-
-.mode-icon.inv { background: rgba(0,229,160,0.15); }
-.mode-icon.box { background: rgba(255,140,66,0.15); }
-
-.mode-text-title { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
-.mode-text-sub { font-size: 13px; color: var(--muted); }
-.mode-arrow { margin-left: auto; color: var(--muted); flex-shrink: 0; }
-
-/* ===== APP SCREEN ===== */
-.app-screen { display: none; flex-direction: column; min-height: 100vh; }
-.app-screen.active { display: flex; }
-
-header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.back-btn {
-  width: 34px; height: 34px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.back-btn:active { opacity: 0.7; }
-
-header h1 { font-size: 16px; font-weight: 600; }
-
-.count-badge {
-  margin-left: auto;
-  background: var(--accent-dim);
-  color: #000;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 20px;
-  min-width: 28px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.count-badge.orange { background: var(--orange); }
-
-.main { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
-
-/* ===== CAMERA ===== */
-.camera-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-
-#reader, #reader2 { border: none !important; width: 100% !important; display: none; }
-#reader video, #reader2 video { width: 100% !important; object-fit: cover; display: block; }
-#reader__scan_region, #reader2__scan_region { background: #000 !important; }
-#reader__dashboard, #reader2__dashboard { display: none !important; }
-#reader__scan_region img, #reader2__scan_region img { display: none !important; }
-
-.cam-wrap { position: relative; display: none; }
-.cam-wrap.active { display: block; }
-
-.scan-frame-overlay {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  pointer-events: none; z-index: 10;
-}
-
-.scan-frame {
-  width: 72%; height: 38%;
-  border: 2px solid var(--accent);
-  border-radius: 8px;
-  box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
-  position: relative;
-}
-
-.scan-frame.orange-frame { border-color: var(--orange); }
-
-.scan-line {
-  position: absolute; left: 0; right: 0; top: 10%;
-  height: 2px; background: var(--accent); opacity: 0.85;
-  animation: scanAnim 1.8s ease-in-out infinite;
-}
-
-.scan-line.orange-line { background: var(--orange); }
-
-@keyframes scanAnim { 0%,100%{top:10%} 50%{top:85%} }
-
-.sc { position: absolute; width: 18px; height: 18px; border-color: var(--accent); border-style: solid; }
-.sc.orange-sc { border-color: var(--orange); }
-.sc-tl { top:-2px; left:-2px; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
-.sc-tr { top:-2px; right:-2px; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
-.sc-bl { bottom:-2px; left:-2px; border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
-.sc-br { bottom:-2px; right:-2px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
-
-.cam-placeholder {
-  height: 140px;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 8px; color: var(--muted);
-}
-
-.cam-placeholder p { font-size: 13px; }
-
-.camera-controls { padding: 12px 14px; display: flex; gap: 10px; }
-
-.btn {
-  border: none; border-radius: 10px;
-  font-size: 14px; font-weight: 600;
-  padding: 11px 16px; cursor: pointer;
-  transition: transform 0.15s;
-  display: flex; align-items: center; gap: 7px;
-}
-
-.btn:active { transform: scale(0.96); }
-.btn-green { background: var(--accent); color: #000; flex: 1; }
-.btn-orange { background: var(--orange); color: #000; flex: 1; }
-.btn-stop { background: var(--surface2); color: var(--danger); border: 1px solid var(--border); flex: 1; }
-.btn-icon { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 11px 14px; }
-.btn-xls { background: #1a7a3a; color: #fff; }
-.btn-trash { background: transparent; color: var(--danger); border: 1px solid #3a2020; padding: 10px 12px; }
-
-/* ===== INFO CARDS ===== */
-.info-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  padding: 14px;
-}
-
-.lbl {
-  font-size: 11px; text-transform: uppercase;
-  letter-spacing: 0.8px; color: var(--muted);
-  margin-bottom: 6px; display: block;
-}
-
-.barcode-big {
-  font-family: 'Courier New', monospace;
-  font-size: 20px; font-weight: 700;
-  letter-spacing: 1.5px; word-break: break-all;
-}
-
-.barcode-big.green { color: var(--accent); }
-.barcode-big.orange { color: var(--orange); }
-
-/* ===== BOX STATUS ===== */
-.box-status {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  padding: 14px;
-  display: none;
-}
-
-.box-status.show { display: block; }
-
-.box-status-row {
-  display: flex; align-items: center; gap: 10px;
-}
-
-.box-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  background: var(--orange);
-  flex-shrink: 0;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-.box-bc {
-  font-family: 'Courier New', monospace;
-  font-size: 15px; font-weight: 700;
-  color: var(--orange); flex: 1;
-}
-
-.box-count {
-  font-size: 12px; color: var(--muted);
-}
-
-.change-box-btn {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--orange);
-  font-size: 12px; font-weight: 600;
-  padding: 6px 12px; cursor: pointer;
-}
-
-.change-box-btn:active { opacity: 0.7; }
-
-/* ===== SCAN RESULT (quantity input) ===== */
-.scan-result {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  padding: 14px;
-  display: none;
-}
-
-.scan-result.show { display: block; }
-
-.qty-row { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
-.qty-label { font-size: 14px; color: var(--muted); white-space: nowrap; }
-
-.qty-ctrl {
-  display: flex; align-items: center;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px; overflow: hidden;
-}
-
-.qty-btn {
-  width: 40px; height: 40px;
-  background: transparent; border: none;
-  color: var(--accent); font-size: 20px; font-weight: 600;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-}
-
-.qty-btn:active { background: var(--surface); }
-
-.qty-inp {
-  width: 60px; height: 40px;
-  background: transparent; border: none;
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  color: var(--text); font-size: 16px; font-weight: 600;
-  text-align: center; outline: none;
-}
-
-.qty-inp::-webkit-inner-spin-button,
-.qty-inp::-webkit-outer-spin-button { -webkit-appearance: none; }
-
-.btn-add-green {
-  background: var(--accent); color: #000;
-  border: none; border-radius: 10px;
-  font-size: 14px; font-weight: 700;
-  padding: 0 16px; height: 40px;
-  cursor: pointer; flex: 1;
-}
-
-.btn-add-green:active { opacity: 0.85; }
-
-/* ===== MANUAL ===== */
-.manual-section {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  padding: 14px;
-}
-
-.manual-row { display: flex; gap: 8px; }
-
-.text-input {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px; color: var(--text);
-  font-size: 15px; padding: 10px 12px;
-  outline: none; transition: border-color 0.15s;
-}
-
-.text-input:focus { border-color: var(--accent); }
-.text-input::placeholder { color: var(--muted); }
-.text-input.mono { font-family: 'Courier New', monospace; letter-spacing: 1px; }
-
-/* ===== LIST ===== */
-.list-section {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-
-.list-header {
-  padding: 12px 14px;
-  display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface2);
-}
-
-.list-actions { display: flex; gap: 8px; }
-.list-table-wrap { overflow-x: auto; }
-
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-
-thead th {
-  background: var(--surface2);
-  padding: 9px 12px; text-align: left;
-  font-size: 10px; text-transform: uppercase;
-  letter-spacing: 0.8px; color: var(--muted);
-  font-weight: 600; border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-
-tbody tr { border-bottom: 1px solid var(--border); }
-tbody tr:last-child { border-bottom: none; }
-tbody tr:active { background: var(--surface2); }
-td { padding: 10px 12px; vertical-align: middle; }
-
-.td-num { font-size: 11px; color: var(--muted); width: 24px; }
-.td-bc { font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 0.5px; color: var(--accent); }
-.td-bc-box { font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 0.5px; color: var(--orange); }
-.td-qty { font-weight: 700; font-size: 15px; text-align: center; width: 50px; }
-.td-del { text-align: center; width: 36px; }
-
-.del-btn {
-  background: transparent; border: none;
-  color: var(--muted); cursor: pointer;
-  font-size: 18px; padding: 4px 6px;
-  border-radius: 6px; line-height: 1;
-}
-
-.del-btn:active { color: var(--danger); }
-
-.empty-state { text-align: center; padding: 36px 20px; color: var(--muted); }
-.empty-state p { font-size: 13px; margin-top: 10px; }
-
-/* ===== TOAST ===== */
-.toast {
-  position: fixed; top: 70px; left: 50%;
-  transform: translateX(-50%) translateY(-20px);
-  background: var(--accent); color: #000;
-  padding: 10px 20px; border-radius: 30px;
-  font-size: 14px; font-weight: 600;
-  opacity: 0; transition: all 0.25s;
-  z-index: 999; white-space: nowrap; pointer-events: none;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.err { background: var(--danger); color: #fff; }
-.toast.info { background: var(--blue); color: #fff; }
-
-.flash {
-  position: fixed; inset: 0;
-  background: #fff; opacity: 0;
-  pointer-events: none; z-index: 9999;
-  transition: opacity 0.1s;
-}
-.flash.active { opacity: 0.3; }
-
-.safe-bottom { height: 28px; }
-
-/* ===== BOX MODE: step indicator ===== */
-.step-indicator {
-  display: flex; gap: 8px; align-items: center;
-  padding: 10px 14px;
-  background: var(--surface2);
-  border-radius: 10px;
-  font-size: 13px;
-}
-
-.step-pip {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--border); flex-shrink: 0;
-  transition: background 0.2s;
-}
-
-.step-pip.active { background: var(--orange); }
-.step-pip.done { background: var(--accent); }
-
-.step-text { color: var(--muted); }
-.step-text strong { color: var(--text); }
-
-@media (min-width: 500px) {
-  .main { max-width: 480px; margin: 0 auto; padding: 20px; }
-  .home { max-width: 480px; margin: 0 auto; }
-}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'SF Pro Display',-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+/* HOME */
+.home{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:20px}
+.home-logo{width:72px;height:72px;background:var(--accent);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.home-title{font-size:26px;font-weight:700;letter-spacing:-.5px;text-align:center}
+.home-sub{font-size:15px;color:var(--muted);text-align:center;margin-top:-10px;margin-bottom:12px}
+.mode-btn{width:100%;max-width:360px;padding:20px 24px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);text-align:left;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:16px}
+.mode-btn:active{transform:scale(.97);background:var(--surface2)}
+.mode-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mode-icon.inv{background:rgba(0,229,160,.15)}
+.mode-icon.box{background:rgba(255,140,66,.15)}
+.mode-text-title{font-size:16px;font-weight:600;margin-bottom:3px}
+.mode-text-sub{font-size:13px;color:var(--muted)}
+.mode-arrow{margin-left:auto;color:var(--muted);flex-shrink:0}
+
+/* APP */
+.app-screen{display:none;flex-direction:column;min-height:100vh}
+.app-screen.active{display:flex}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+.back-btn{width:34px;height:34px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.back-btn:active{opacity:.7}
+header h1{font-size:16px;font-weight:600}
+.count-badge{margin-left:auto;background:var(--accent-dim);color:#000;font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;min-width:28px;text-align:center;flex-shrink:0}
+.count-badge.orange{background:var(--orange)}
+.main{flex:1;padding:14px;display:flex;flex-direction:column;gap:14px}
+
+/* CAMERA */
+.camera-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.cam-wrap{position:relative;display:none;background:#000}
+.cam-wrap.active{display:block}
+.cam-wrap video{width:100%;display:block;max-height:280px;object-fit:cover}
+.scan-frame-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:10}
+.scan-frame{width:78%;height:40%;border:2px solid var(--accent);border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);position:relative}
+.scan-frame.orange-frame{border-color:var(--orange)}
+.scan-line{position:absolute;left:0;right:0;top:10%;height:2px;background:var(--accent);opacity:.9;animation:scanAnim 1.6s ease-in-out infinite}
+.scan-line.orange-line{background:var(--orange)}
+@keyframes scanAnim{0%,100%{top:10%}50%{top:85%}}
+.sc{position:absolute;width:20px;height:20px;border-color:var(--accent);border-style:solid}
+.sc.o{border-color:var(--orange)}
+.sc-tl{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+.sc-tr{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
+.sc-bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
+.sc-br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+.cam-placeholder{height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted)}
+.cam-placeholder p{font-size:13px}
+.camera-controls{padding:12px 14px;display:flex;gap:10px}
+
+/* BUTTONS */
+.btn{border:none;border-radius:10px;font-size:14px;font-weight:600;padding:11px 16px;cursor:pointer;transition:transform .15s;display:flex;align-items:center;gap:7px}
+.btn:active{transform:scale(.96)}
+.btn-green{background:var(--accent);color:#000;flex:1}
+.btn-orange{background:var(--orange);color:#000;flex:1}
+.btn-stop{background:var(--surface2);color:var(--danger);border:1px solid var(--border);flex:1}
+.btn-icon{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:11px 14px}
+.btn-xls{background:#1a7a3a;color:#fff}
+.btn-trash{background:transparent;color:var(--danger);border:1px solid #3a2020;padding:10px 12px}
+
+/* INFO */
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px;display:block}
+.barcode-big{font-family:'Courier New',monospace;font-size:18px;font-weight:700;letter-spacing:1.5px;word-break:break-all}
+.barcode-big.green{color:var(--accent)}
+.barcode-big.orange{color:var(--orange)}
+
+/* BOX STATUS */
+.box-status{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:14px;display:none}
+.box-status.show{display:block}
+.box-status-row{display:flex;align-items:center;gap:10px}
+.box-dot{width:10px;height:10px;border-radius:50%;background:var(--orange);flex-shrink:0;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.box-bc{font-family:'Courier New',monospace;font-size:14px;font-weight:700;color:var(--orange);flex:1;word-break:break-all}
+.box-count{font-size:12px;color:var(--muted);white-space:nowrap}
+.change-box-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--orange);font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.change-box-btn:active{opacity:.7}
+
+/* SCAN RESULT */
+.scan-result{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:14px;display:none}
+.scan-result.show{display:block}
+.qty-row{display:flex;gap:10px;align-items:center;margin-top:10px}
+.qty-label{font-size:14px;color:var(--muted);white-space:nowrap}
+.qty-ctrl{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.qty-btn{width:40px;height:40px;background:transparent;border:none;color:var(--accent);font-size:20px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.qty-btn:active{background:var(--surface)}
+.qty-inp{width:60px;height:40px;background:transparent;border:none;border-left:1px solid var(--border);border-right:1px solid var(--border);color:var(--text);font-size:16px;font-weight:600;text-align:center;outline:none}
+.qty-inp::-webkit-inner-spin-button,.qty-inp::-webkit-outer-spin-button{-webkit-appearance:none}
+.btn-add{background:var(--accent);color:#000;border:none;border-radius:10px;font-size:14px;font-weight:700;padding:0 16px;height:40px;cursor:pointer;flex:1}
+.btn-add:active{opacity:.85}
+
+/* MANUAL */
+.manual-section{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:14px}
+.manual-row{display:flex;gap:8px}
+.text-input{background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;padding:10px 12px;outline:none;transition:border-color .15s}
+.text-input:focus{border-color:var(--accent)}
+.text-input::placeholder{color:var(--muted)}
+.text-input.mono{font-family:'Courier New',monospace;letter-spacing:1px}
+
+/* LIST */
+.list-section{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.list-header{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface2)}
+.list-actions{display:flex;gap:8px}
+.list-table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--surface2);padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:active{background:var(--surface2)}
+td{padding:10px 12px;vertical-align:middle}
+.td-num{font-size:11px;color:var(--muted);width:24px}
+.td-bc{font-family:'Courier New',monospace;font-size:12px;letter-spacing:.5px;color:var(--accent)}
+.td-bc-box{font-family:'Courier New',monospace;font-size:12px;color:var(--orange)}
+.td-qty{font-weight:700;font-size:15px;text-align:center;width:50px}
+.td-del{text-align:center;width:36px}
+.del-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px 6px;border-radius:6px;line-height:1}
+.del-btn:active{color:var(--danger)}
+.empty-state{text-align:center;padding:36px 20px;color:var(--muted)}
+.empty-state p{font-size:13px;margin-top:10px}
+
+/* STEP */
+.step-indicator{display:flex;gap:8px;align-items:center;padding:10px 14px;background:var(--surface2);border-radius:10px;font-size:13px}
+.step-pip{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background .2s}
+.step-pip.active{background:var(--orange)}
+.step-pip.done{background:var(--accent)}
+.step-text{color:var(--muted)}
+.step-text strong{color:var(--text)}
+
+/* TOAST / FLASH */
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--accent);color:#000;padding:10px 20px;border-radius:30px;font-size:14px;font-weight:600;opacity:0;transition:all .25s;z-index:999;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--danger);color:#fff}
+.toast.info{background:var(--blue);color:#fff}
+.flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9999;transition:opacity .08s}
+.flash.active{opacity:0.25}
+.safe-bottom{height:28px}
+
+@media(min-width:500px){.main{max-width:480px;margin:0 auto;padding:20px}.home{max-width:480px;margin:0 auto}}
 </style>
 </head>
 <body>
-
 <div class="flash" id="flash"></div>
 <div class="toast" id="toast"></div>
 
-<!-- ===== HOME ===== -->
+<!-- HOME -->
 <div class="home" id="home-screen">
   <div class="home-logo">
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5">
-      <rect x="2" y="4" width="3" height="16" rx="0.5"/>
-      <rect x="7" y="4" width="1.5" height="16" rx="0.5"/>
-      <rect x="10.5" y="4" width="3" height="16" rx="0.5"/>
-      <rect x="15.5" y="4" width="1.5" height="16" rx="0.5"/>
+      <rect x="2" y="4" width="3" height="16" rx="0.5"/><rect x="7" y="4" width="1.5" height="16" rx="0.5"/>
+      <rect x="10.5" y="4" width="3" height="16" rx="0.5"/><rect x="15.5" y="4" width="1.5" height="16" rx="0.5"/>
       <rect x="18.5" y="4" width="3" height="16" rx="0.5"/>
     </svg>
   </div>
   <div class="home-title">Сканер штрихкодов</div>
   <div class="home-sub">Выберите режим работы</div>
-
   <button class="mode-btn" onclick="openMode('inv')">
     <div class="mode-icon inv">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00e5a0" stroke-width="2">
         <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
-        <rect x="9" y="3" width="6" height="4" rx="1"/>
-        <line x1="9" y1="12" x2="15" y2="12"/>
-        <line x1="9" y1="16" x2="13" y2="16"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
       </svg>
     </div>
-    <div>
-      <div class="mode-text-title">Инвентаризация</div>
-      <div class="mode-text-sub">Сканирование и подсчёт товаров</div>
-    </div>
-    <div class="mode-arrow">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <polyline points="9 18 15 12 9 6"/>
-      </svg>
-    </div>
+    <div><div class="mode-text-title">Инвентаризация</div><div class="mode-text-sub">Сканирование и подсчёт товаров</div></div>
+    <div class="mode-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div>
   </button>
-
   <button class="mode-btn" onclick="openMode('box')">
     <div class="mode-icon box">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff8c42" stroke-width="2">
         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-        <line x1="12" y1="22.08" x2="12" y2="12"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
       </svg>
     </div>
-    <div>
-      <div class="mode-text-title">Распределение по коробам</div>
-      <div class="mode-text-sub">Привязка товаров к коробам</div>
-    </div>
-    <div class="mode-arrow">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <polyline points="9 18 15 12 9 6"/>
-      </svg>
-    </div>
+    <div><div class="mode-text-title">Распределение по коробам</div><div class="mode-text-sub">Привязка товаров к коробам</div></div>
+    <div class="mode-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div>
   </button>
 </div>
 
-<!-- ===== ИНВЕНТАРИЗАЦИЯ ===== -->
+<!-- ИНВЕНТАРИЗАЦИЯ -->
 <div class="app-screen" id="inv-screen">
   <header>
-    <div class="back-btn" onclick="goHome('inv')">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <polyline points="15 18 9 12 15 6"/>
-      </svg>
-    </div>
+    <div class="back-btn" onclick="goHome('inv')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></div>
     <h1>Инвентаризация</h1>
     <div class="count-badge" id="inv-count">0</div>
   </header>
-
   <div class="main">
     <div class="camera-card">
       <div class="cam-wrap" id="inv-cam-wrap">
-        <div id="reader"></div>
+        <video id="inv-video" autoplay playsinline muted></video>
         <div class="scan-frame-overlay">
           <div class="scan-frame">
             <div class="scan-line"></div>
@@ -555,26 +209,21 @@ td { padding: 10px 12px; vertical-align: middle; }
         </div>
       </div>
       <div class="cam-placeholder" id="inv-cam-ph">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-          <circle cx="12" cy="13" r="4"/>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
         </svg>
         <p>Нажмите «Сканировать»</p>
       </div>
       <div class="camera-controls">
-        <button class="btn btn-green" id="inv-btn-scan" onclick="invStartScan()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-          </svg>
+        <button class="btn btn-green" id="inv-btn-scan" onclick="startScan('inv')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Сканировать
         </button>
-        <button class="btn btn-stop" id="inv-btn-stop" onclick="invStopScan()" style="display:none">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-          </svg>
+        <button class="btn btn-stop" id="inv-btn-stop" onclick="stopScan('inv')" style="display:none">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
           Стоп
         </button>
-        <button class="btn btn-icon" onclick="toggleInvManual()">
+        <button class="btn btn-icon" onclick="toggleManual('inv')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -582,115 +231,89 @@ td { padding: 10px 12px; vertical-align: middle; }
         </button>
       </div>
     </div>
-
     <div class="scan-result" id="inv-result">
       <span class="lbl">Последнее сканирование</span>
       <div class="barcode-big green" id="inv-barcode-display">—</div>
       <div class="qty-row">
         <span class="qty-label">Кол-во:</span>
         <div class="qty-ctrl">
-          <button class="qty-btn" onclick="invChangeQty(-1)">−</button>
+          <button class="qty-btn" onclick="chQty('inv-qty',-1)">−</button>
           <input type="number" class="qty-inp" id="inv-qty" value="1" min="1" max="9999">
-          <button class="qty-btn" onclick="invChangeQty(1)">+</button>
+          <button class="qty-btn" onclick="chQty('inv-qty',1)">+</button>
         </div>
-        <button class="btn-add-green" onclick="invAddItem()">Добавить ✓</button>
+        <button class="btn-add" onclick="invAddItem()">Добавить ✓</button>
       </div>
     </div>
-
     <div class="manual-section" id="inv-manual" style="display:none">
       <span class="lbl">Ручной ввод</span>
       <div class="manual-row">
-        <input class="text-input mono" style="flex:2" type="tel" id="inv-manual-bc" maxlength="13" placeholder="Штрихкод">
+        <input class="text-input mono" style="flex:2" type="tel" id="inv-manual-bc" maxlength="20" placeholder="Штрихкод">
         <input class="text-input" style="flex:0 0 70px;text-align:center" type="number" id="inv-manual-qty" value="1" min="1" placeholder="Кол">
         <button class="btn btn-green" onclick="invAddManual()" style="padding:10px 14px;flex-shrink:0">+</button>
       </div>
     </div>
-
     <div class="list-section">
       <div class="list-header">
         <span class="lbl" style="margin:0">Список товаров</span>
         <div class="list-actions">
           <button class="btn btn-xls" onclick="invExport()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-            </svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             XLS
           </button>
           <button class="btn btn-trash" onclick="invClear()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            </svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
           </button>
         </div>
       </div>
       <div class="list-table-wrap">
-        <table>
-          <thead><tr><th>#</th><th>Баркод</th><th style="text-align:center">Кол-во</th><th></th></tr></thead>
-          <tbody id="inv-list-body"></tbody>
-        </table>
+        <table><thead><tr><th>#</th><th>Баркод</th><th style="text-align:center">Кол-во</th><th></th></tr></thead>
+        <tbody id="inv-list-body"></tbody></table>
       </div>
     </div>
-
     <div class="safe-bottom"></div>
   </div>
 </div>
 
-<!-- ===== РАСПРЕДЕЛЕНИЕ ПО КОРОБАМ ===== -->
+<!-- РАСПРЕДЕЛЕНИЕ ПО КОРОБАМ -->
 <div class="app-screen" id="box-screen">
   <header>
-    <div class="back-btn" onclick="goHome('box')">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <polyline points="15 18 9 12 15 6"/>
-      </svg>
-    </div>
+    <div class="back-btn" onclick="goHome('box')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></div>
     <h1>По коробам</h1>
     <div class="count-badge orange" id="box-count">0</div>
   </header>
-
   <div class="main">
-
-    <!-- Step indicator -->
     <div class="step-indicator" id="box-step-indicator">
       <div class="step-pip active" id="step-pip-1"></div>
       <div class="step-pip" id="step-pip-2"></div>
       <div class="step-text" id="box-step-text"><strong>Шаг 1:</strong> Отсканируйте штрихкод короба</div>
     </div>
-
-    <!-- Camera -->
     <div class="camera-card">
       <div class="cam-wrap" id="box-cam-wrap">
-        <div id="reader2"></div>
-        <div class="scan-frame-overlay" id="box-frame-overlay">
+        <video id="box-video" autoplay playsinline muted></video>
+        <div class="scan-frame-overlay">
           <div class="scan-frame" id="box-scan-frame">
             <div class="scan-line" id="box-scan-line"></div>
-            <div class="sc sc-tl" id="box-sc-tl"></div><div class="sc sc-tr" id="box-sc-tr"></div>
-            <div class="sc sc-bl" id="box-sc-bl"></div><div class="sc sc-br" id="box-sc-br"></div>
+            <div class="sc sc-tl" id="bsc-tl"></div><div class="sc sc-tr" id="bsc-tr"></div>
+            <div class="sc sc-bl" id="bsc-bl"></div><div class="sc sc-br" id="bsc-br"></div>
           </div>
         </div>
       </div>
       <div class="cam-placeholder" id="box-cam-ph">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-          <circle cx="12" cy="13" r="4"/>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
         </svg>
         <p id="box-cam-hint">Нажмите «Сканировать короб»</p>
       </div>
       <div class="camera-controls">
-        <button class="btn btn-orange" id="box-btn-scan" onclick="boxStartScan()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-          </svg>
+        <button class="btn btn-orange" id="box-btn-scan" onclick="startScan('box')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           <span id="box-btn-label">Сканировать короб</span>
         </button>
-        <button class="btn btn-stop" id="box-btn-stop" onclick="boxStopScan()" style="display:none">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-          </svg>
+        <button class="btn btn-stop" id="box-btn-stop" onclick="stopScan('box')" style="display:none">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
           Стоп
         </button>
-        <button class="btn btn-icon" onclick="toggleBoxManual()">
+        <button class="btn btn-icon" onclick="toggleManual('box')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -698,195 +321,285 @@ td { padding: 10px 12px; vertical-align: middle; }
         </button>
       </div>
     </div>
-
-    <!-- Active box status -->
     <div class="box-status" id="box-status">
       <div class="box-status-row">
         <div class="box-dot"></div>
-        <div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">Активный короб</div>
-          <div class="box-bc" id="box-active-bc">—</div>
-        </div>
+        <div><div style="font-size:11px;color:var(--muted);margin-bottom:2px">Активный короб</div>
+        <div class="box-bc" id="box-active-bc">—</div></div>
         <div class="box-count" id="box-items-count">0 поз.</div>
         <button class="change-box-btn" onclick="boxReset()">Сменить</button>
       </div>
     </div>
-
-    <!-- Product scan result -->
     <div class="scan-result" id="box-result">
       <span class="lbl">Товар для короба</span>
       <div class="barcode-big green" id="box-product-display">—</div>
       <div class="qty-row">
         <span class="qty-label">Кол-во:</span>
         <div class="qty-ctrl">
-          <button class="qty-btn" onclick="boxChangeQty(-1)">−</button>
+          <button class="qty-btn" onclick="chQty('box-qty',-1)">−</button>
           <input type="number" class="qty-inp" id="box-qty" value="1" min="1" max="9999">
-          <button class="qty-btn" onclick="boxChangeQty(1)">+</button>
+          <button class="qty-btn" onclick="chQty('box-qty',1)">+</button>
         </div>
-        <button class="btn-add-green" onclick="boxAddItem()">Добавить ✓</button>
+        <button class="btn-add" onclick="boxAddItem()">Добавить ✓</button>
       </div>
     </div>
-
-    <!-- Manual input -->
     <div class="manual-section" id="box-manual" style="display:none">
       <span class="lbl" id="box-manual-label">Ручной ввод — короб</span>
       <div class="manual-row">
-        <input class="text-input mono" style="flex:2" type="tel" id="box-manual-bc" maxlength="20" placeholder="Штрихкод">
+        <input class="text-input mono" style="flex:2" type="tel" id="box-manual-bc" maxlength="30" placeholder="Штрихкод">
         <input class="text-input" style="flex:0 0 70px;text-align:center;display:none" type="number" id="box-manual-qty" value="1" min="1" placeholder="Кол">
         <button class="btn btn-orange" id="box-manual-btn" onclick="boxManualAction()" style="padding:10px 14px;flex-shrink:0">OK</button>
       </div>
     </div>
-
-    <!-- List -->
     <div class="list-section">
       <div class="list-header">
         <span class="lbl" style="margin:0">Список</span>
         <div class="list-actions">
           <button class="btn btn-xls" onclick="boxExport()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-            </svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             XLS
           </button>
           <button class="btn btn-trash" onclick="boxClear()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            </svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
           </button>
         </div>
       </div>
       <div class="list-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Баркод товара</th>
-              <th style="text-align:center">Кол-во</th>
-              <th>ШК короба</th>
-              <th>Срок годн.</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="box-list-body"></tbody>
-        </table>
+        <table><thead><tr><th>#</th><th>Баркод товара</th><th style="text-align:center">Кол-во</th><th>ШК короба</th><th>Срок годн.</th><th></th></tr></thead>
+        <tbody id="box-list-body"></tbody></table>
       </div>
     </div>
-
     <div class="safe-bottom"></div>
   </div>
 </div>
 
 <script>
-// ===== UTILS =====
+// ============================================================
+// BEEP — Web Audio API (работает без файлов)
+// ============================================================
+let audioCtx = null;
+function beep() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1800, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.13);
+  } catch(e) {}
+}
+
+// Unlock AudioContext on first user gesture
+document.addEventListener('touchstart', () => {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}, { once: false, passive: true });
+
+// ============================================================
+// UTILS
+// ============================================================
 function toast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'toast show' + (type ? ' ' + type : '');
+  t.className = 'toast show' + (type ? ' '+type : '');
   clearTimeout(t._tid);
-  t._tid = setTimeout(() => t.className = 'toast', 2400);
+  t._tid = setTimeout(() => t.className='toast', 2400);
 }
-
 function flashScreen() {
   const f = document.getElementById('flash');
   f.classList.add('active');
-  setTimeout(() => f.classList.remove('active'), 120);
+  setTimeout(() => f.classList.remove('active'), 100);
 }
-
-function vib(p) { if (navigator.vibrate) navigator.vibrate(p); }
-
+function vib(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch(e){} }
 function dateStamp() {
   const d = new Date();
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
 }
-
-// ===== HOME =====
-function openMode(mode) {
-  document.getElementById('home-screen').style.display = 'none';
-  document.getElementById(mode + '-screen').classList.add('active');
+function chQty(id, d) {
+  const inp = document.getElementById(id);
+  inp.value = Math.max(1, (parseInt(inp.value)||1) + d);
 }
 
+// ============================================================
+// ZXING SCANNER ENGINE
+// ============================================================
+// Все форматы которые поддерживает ZXing
+const ALL_FORMATS = [
+  ZXing.BarcodeFormat.EAN_13,
+  ZXing.BarcodeFormat.EAN_8,
+  ZXing.BarcodeFormat.CODE_128,
+  ZXing.BarcodeFormat.CODE_39,
+  ZXing.BarcodeFormat.CODE_93,
+  ZXing.BarcodeFormat.CODABAR,
+  ZXing.BarcodeFormat.DATA_MATRIX,
+  ZXing.BarcodeFormat.ITF,
+  ZXing.BarcodeFormat.PDF_417,
+  ZXing.BarcodeFormat.QR_CODE,
+  ZXing.BarcodeFormat.UPC_A,
+  ZXing.BarcodeFormat.UPC_E,
+  ZXing.BarcodeFormat.RSS_14,
+  ZXing.BarcodeFormat.RSS_EXPANDED,
+];
+
+// Создаём reader с hints для всех форматов и повышенной точностью
+function createReader() {
+  const hints = new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, ALL_FORMATS);
+  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+  hints.set(ZXing.DecodeHintType.CHARACTER_SET, 'UTF-8');
+  return new ZXing.BrowserMultiFormatReader(hints, {
+    delayBetweenScanAttempts: 80,      // быстрее сканируем
+    delayBetweenScanSuccess: 1500,
+  });
+}
+
+// Состояние сканеров
+const state = {
+  inv:  { reader: null, scanning: false, stream: null },
+  box:  { reader: null, scanning: false, stream: null },
+};
+
+async function startScan(mode) {
+  const s = state[mode];
+  if (s.scanning) return;
+
+  // Разблокируем AudioContext при нажатии
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+
+  try {
+    s.reader = createReader();
+    const videoId = mode === 'inv' ? 'inv-video' : 'box-video';
+
+    // Получаем список камер и выбираем заднюю с высоким разрешением
+    const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+    let deviceId;
+    if (devices.length > 0) {
+      // Предпочитаем заднюю камеру
+      const back = devices.find(d => /back|rear|environment|main/i.test(d.label));
+      deviceId = back ? back.deviceId : devices[devices.length - 1].deviceId;
+    }
+
+    // Запрашиваем максимальное разрешение для лучшего распознавания
+    const constraints = {
+      video: {
+        deviceId: deviceId ? { exact: deviceId } : undefined,
+        facingMode: deviceId ? undefined : { ideal: 'environment' },
+        width:  { ideal: 1920, min: 1280 },
+        height: { ideal: 1080, min: 720 },
+        focusMode: { ideal: 'continuous' },
+        advanced: [{ focusMode: 'continuous' }],
+      }
+    };
+
+    // Показываем камеру
+    document.getElementById(mode+'-cam-ph').style.display = 'none';
+    document.getElementById(mode+'-cam-wrap').classList.add('active');
+    document.getElementById(mode+'-btn-scan').style.display = 'none';
+    document.getElementById(mode+'-btn-stop').style.display = '';
+
+    const callback = (result, err) => {
+      if (result) {
+        const code = result.getText();
+        onScanResult(mode, code);
+      }
+    };
+
+    await s.reader.decodeFromConstraints(constraints, videoId, callback);
+    s.scanning = true;
+
+  } catch(e) {
+    let msg = e + '';
+    if (/NotAllowed|Permission|denied/i.test(msg)) msg = 'Нет доступа к камере. Разрешите в настройках.';
+    else if (/NotFound|Devices/i.test(msg)) msg = 'Камера не найдена.';
+    else msg = 'Ошибка камеры: ' + msg.substring(0, 60);
+    toast(msg, 'err');
+    resetCamUI(mode);
+  }
+}
+
+function stopScan(mode) {
+  const s = state[mode];
+  if (s.reader) {
+    try { s.reader.reset(); } catch(e) {}
+    s.reader = null;
+  }
+  s.scanning = false;
+  resetCamUI(mode);
+}
+
+function resetCamUI(mode) {
+  document.getElementById(mode+'-cam-ph').style.display = '';
+  document.getElementById(mode+'-cam-wrap').classList.remove('active');
+  document.getElementById(mode+'-btn-scan').style.display = '';
+  document.getElementById(mode+'-btn-stop').style.display = 'none';
+  // Сбрасываем видео
+  const vid = document.getElementById(mode === 'inv' ? 'inv-video' : 'box-video');
+  if (vid && vid.srcObject) {
+    vid.srcObject.getTracks().forEach(t => t.stop());
+    vid.srcObject = null;
+  }
+}
+
+// Дедупликация результатов
+const lastScan = { inv: { code:'', time:0 }, box: { code:'', time:0 } };
+
+function onScanResult(mode, code) {
+  const ls = lastScan[mode];
+  const now = Date.now();
+  // Игнорируем повтор того же кода в течение 2 сек
+  if (code === ls.code && now - ls.time < 2000) return;
+  ls.code = code;
+  ls.time = now;
+
+  beep();
+  flashScreen();
+  vib([30, 20, 30]);
+  stopScan(mode);
+
+  if (mode === 'inv') {
+    invOnCode(code);
+  } else {
+    boxOnCode(code);
+  }
+}
+
+// ============================================================
+// HOME
+// ============================================================
+function openMode(mode) {
+  document.getElementById('home-screen').style.display = 'none';
+  document.getElementById(mode+'-screen').classList.add('active');
+}
 function goHome(mode) {
-  if (mode === 'inv') invStopScan();
-  if (mode === 'box') boxStopScan();
-  document.getElementById(mode + '-screen').classList.remove('active');
+  stopScan(mode);
+  document.getElementById(mode+'-screen').classList.remove('active');
   document.getElementById('home-screen').style.display = '';
 }
 
 // ============================================================
-// ===== ИНВЕНТАРИЗАЦИЯ =====
+// ИНВЕНТАРИЗАЦИЯ
 // ============================================================
 let invItems = [];
-let invQrCode = null;
-let invScanning = false;
-let invCooldown = false;
-let invLastCode = '';
 let invCurrentBarcode = null;
 
-async function invStartScan() {
-  if (invScanning) return;
-  try {
-    invQrCode = new Html5Qrcode("reader");
-    await invQrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 260, height: 110 }, aspectRatio: 1.5,
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E
-        ]
-      },
-      invOnScan, null
-    );
-    invScanning = true;
-    document.getElementById('inv-cam-ph').style.display = 'none';
-    document.getElementById('inv-cam-wrap').classList.add('active');
-    document.getElementById('reader').style.display = 'block';
-    document.getElementById('inv-btn-scan').style.display = 'none';
-    document.getElementById('inv-btn-stop').style.display = '';
-  } catch(e) {
-    let msg = /NotAllowed|Permission|denied/i.test(e+'') ? 'Нет доступа к камере' : 'Ошибка: ' + e;
-    toast(msg, 'err');
-  }
-}
-
-function invOnScan(code) {
-  if (invCooldown) return;
-  const now = Date.now();
-  if (code === invLastCode && now - invLastCode < 2000) return;
-  invLastCode = code;
-  invCooldown = true;
-  flashScreen(); vib([40,30,40]);
+function invOnCode(code) {
   invCurrentBarcode = code;
   document.getElementById('inv-barcode-display').textContent = code;
   document.getElementById('inv-qty').value = 1;
   document.getElementById('inv-result').classList.add('show');
-  invStopScan();
-}
-
-async function invStopScan() {
-  if (invQrCode) { try { await invQrCode.stop(); } catch(e){} invQrCode = null; }
-  invScanning = false;
-  invCooldown = false;
-  invLastCode = '';
-  document.getElementById('inv-cam-ph').style.display = '';
-  document.getElementById('inv-cam-wrap').classList.remove('active');
-  document.getElementById('reader').style.display = 'none';
-  document.getElementById('inv-btn-scan').style.display = '';
-  document.getElementById('inv-btn-stop').style.display = 'none';
-}
-
-function invChangeQty(d) {
-  const inp = document.getElementById('inv-qty');
-  inp.value = Math.max(1, (parseInt(inp.value)||1) + d);
 }
 
 function invAddItem() {
   if (!invCurrentBarcode) return;
   const qty = parseInt(document.getElementById('inv-qty').value) || 1;
   const ex = invItems.find(i => i.barcode === invCurrentBarcode);
-  if (ex) { ex.qty += qty; toast('Обновлено: +' + qty + ' шт'); }
+  if (ex) { ex.qty += qty; toast('Обновлено: +'+qty+' шт'); }
   else { invItems.push({ barcode: invCurrentBarcode, qty }); toast('Добавлено ✓'); }
   vib(60);
   invRenderList();
@@ -894,18 +607,21 @@ function invAddItem() {
   invCurrentBarcode = null;
 }
 
-function toggleInvManual() {
-  const s = document.getElementById('inv-manual');
-  s.style.display = s.style.display === 'none' ? 'block' : 'none';
-  if (s.style.display === 'block') document.getElementById('inv-manual-bc').focus();
+function toggleManual(mode) {
+  const el = document.getElementById(mode+'-manual');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (el.style.display === 'block') {
+    if (mode === 'box') updateBoxManualUI();
+    document.getElementById(mode+'-manual-bc').focus();
+  }
 }
 
 function invAddManual() {
   const bc = document.getElementById('inv-manual-bc').value.trim();
   const qty = parseInt(document.getElementById('inv-manual-qty').value) || 1;
-  if (!bc || bc.length < 4) { toast('Введите штрихкод', 'err'); return; }
+  if (!bc || bc.length < 2) { toast('Введите штрихкод','err'); return; }
   const ex = invItems.find(i => i.barcode === bc);
-  if (ex) { ex.qty += qty; toast('Обновлено: +' + qty + ' шт'); }
+  if (ex) { ex.qty += qty; toast('Обновлено: +'+qty+' шт'); }
   else { invItems.push({ barcode: bc, qty }); toast('Добавлено ✓'); }
   vib(60);
   document.getElementById('inv-manual-bc').value = '';
@@ -917,10 +633,7 @@ function invAddManual() {
 document.getElementById('inv-manual-bc').addEventListener('keydown', e => { if (e.key==='Enter') invAddManual(); });
 document.getElementById('inv-qty').addEventListener('keydown', e => { if (e.key==='Enter') invAddItem(); });
 
-function invDeleteItem(idx) {
-  if (confirm('Удалить строку?')) { invItems.splice(idx,1); invRenderList(); }
-}
-
+function invDeleteItem(i) { if (confirm('Удалить строку?')) { invItems.splice(i,1); invRenderList(); } }
 function invClear() {
   if (!invItems.length) return;
   if (confirm('Очистить весь список?')) { invItems=[]; invRenderList(); toast('Список очищен'); }
@@ -931,7 +644,7 @@ function invRenderList() {
   document.getElementById('inv-count').textContent = invItems.length;
   if (!invItems.length) {
     body.innerHTML = `<tr><td colspan="4"><div class="empty-state">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.25">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.25">
         <rect x="2" y="4" width="3" height="16" rx="0.5"/><rect x="7" y="4" width="1.5" height="16" rx="0.5"/>
         <rect x="10.5" y="4" width="3" height="16" rx="0.5"/><rect x="15.5" y="4" width="1.5" height="16" rx="0.5"/>
         <rect x="18.5" y="4" width="3" height="16" rx="0.5"/>
@@ -939,20 +652,17 @@ function invRenderList() {
     return;
   }
   body.innerHTML = invItems.map((item,i) => `
-    <tr>
-      <td class="td-num">${i+1}</td>
-      <td class="td-bc">${item.barcode}</td>
-      <td class="td-qty">${item.qty}</td>
-      <td class="td-del"><button class="del-btn" onclick="invDeleteItem(${i})">×</button></td>
-    </tr>`).join('');
+    <tr><td class="td-num">${i+1}</td><td class="td-bc">${item.barcode}</td>
+    <td class="td-qty">${item.qty}</td>
+    <td class="td-del"><button class="del-btn" onclick="invDeleteItem(${i})">×</button></td></tr>`).join('');
 }
 
 function invExport() {
-  if (!invItems.length) { toast('Список пуст', 'err'); return; }
-  const data = [['Баркод','Количество'], ...invItems.map(i=>[i.barcode, i.qty])];
+  if (!invItems.length) { toast('Список пуст','err'); return; }
+  const data = [['Баркод','Количество'], ...invItems.map(i=>[i.barcode,i.qty])];
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:18},{wch:12}];
+  ws['!cols'] = [{wch:20},{wch:12}];
   XLSX.utils.book_append_sheet(wb, ws, 'Инвентаризация');
   XLSX.writeFile(wb, `inventory_${dateStamp()}.xlsx`);
   toast('Файл сохранён ✓');
@@ -962,82 +672,23 @@ function invExport() {
 invRenderList();
 
 // ============================================================
-// ===== РАСПРЕДЕЛЕНИЕ ПО КОРОБАМ =====
+// РАСПРЕДЕЛЕНИЕ ПО КОРОБАМ
 // ============================================================
 let boxItems = [];
-let boxQrCode = null;
-let boxScanning = false;
-let boxCooldown = false;
-let boxLastCode = '';
-
-// Состояние: 'box' = ждём короб, 'product' = ждём товар
-let boxStep = 'box';
+let boxStep = 'box'; // 'box' | 'product'
 let activeBox = null;
 let boxCurrentProduct = null;
 
-async function boxStartScan() {
-  if (boxScanning) return;
-  try {
-    boxQrCode = new Html5Qrcode("reader2");
-    await boxQrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 260, height: 110 }, aspectRatio: 1.5,
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E
-        ]
-      },
-      boxOnScan, null
-    );
-    boxScanning = true;
-    document.getElementById('box-cam-ph').style.display = 'none';
-    document.getElementById('box-cam-wrap').classList.add('active');
-    document.getElementById('reader2').style.display = 'block';
-    document.getElementById('box-btn-scan').style.display = 'none';
-    document.getElementById('box-btn-stop').style.display = '';
-    // Color frame based on step
-    setBoxFrameColor();
-  } catch(e) {
-    let msg = /NotAllowed|Permission|denied/i.test(e+'') ? 'Нет доступа к камере' : 'Ошибка: ' + e;
-    toast(msg, 'err');
-  }
-}
-
-function setBoxFrameColor() {
-  const isBox = boxStep === 'box';
-  const frame = document.getElementById('box-scan-frame');
-  const line = document.getElementById('box-scan-line');
-  ['box-sc-tl','box-sc-tr','box-sc-bl','box-sc-br'].forEach(id => {
-    const el = document.getElementById(id);
-    el.style.borderColor = isBox ? 'var(--orange)' : 'var(--accent)';
-  });
-  frame.style.borderColor = isBox ? 'var(--orange)' : 'var(--accent)';
-  line.style.background = isBox ? 'var(--orange)' : 'var(--accent)';
-}
-
-function boxOnScan(code) {
-  if (boxCooldown) return;
-  const now = Date.now();
-  if (code === boxLastCode && now - (boxOnScan._last||0) < 2000) return;
-  boxOnScan._last = now;
-  boxLastCode = code;
-  boxCooldown = true;
-  flashScreen();
-  boxStopScan();
-
+function boxOnCode(code) {
   if (boxStep === 'box') {
-    // Scanned a box
     activeBox = code;
     boxStep = 'product';
     document.getElementById('box-active-bc').textContent = code;
     document.getElementById('box-status').classList.add('show');
     updateBoxStepUI();
-    vib([40, 60, 40]);
     toast('Короб: ' + code, 'info');
+    vib([30,40,60]);
   } else {
-    // Scanned a product
-    vib([40,30,40]);
     boxCurrentProduct = code;
     document.getElementById('box-product-display').textContent = code;
     document.getElementById('box-qty').value = 1;
@@ -1045,106 +696,67 @@ function boxOnScan(code) {
   }
 }
 
-async function boxStopScan() {
-  if (boxQrCode) { try { await boxQrCode.stop(); } catch(e){} boxQrCode = null; }
-  boxScanning = false;
-  boxCooldown = false;
-  boxLastCode = '';
-  document.getElementById('box-cam-ph').style.display = '';
-  document.getElementById('box-cam-wrap').classList.remove('active');
-  document.getElementById('reader2').style.display = 'none';
-  document.getElementById('box-btn-scan').style.display = '';
-  document.getElementById('box-btn-stop').style.display = 'none';
-}
-
 function updateBoxStepUI() {
   const isBox = boxStep === 'box';
-  document.getElementById('step-pip-1').className = 'step-pip' + (isBox ? ' active' : ' done');
-  document.getElementById('step-pip-2').className = 'step-pip' + (!isBox ? ' active' : '');
+  document.getElementById('step-pip-1').className = 'step-pip' + (isBox?' active':' done');
+  document.getElementById('step-pip-2').className = 'step-pip' + (!isBox?' active':'');
   document.getElementById('box-step-text').innerHTML = isBox
     ? '<strong>Шаг 1:</strong> Отсканируйте штрихкод короба'
     : '<strong>Шаг 2:</strong> Отсканируйте товар';
   document.getElementById('box-btn-label').textContent = isBox ? 'Сканировать короб' : 'Сканировать товар';
-  document.getElementById('box-btn-scan').className = 'btn ' + (isBox ? 'btn-orange' : 'btn-green');
+  document.getElementById('box-btn-scan').className = 'btn '+(isBox?'btn-orange':'btn-green');
   document.getElementById('box-cam-hint').textContent = isBox ? 'Нажмите «Сканировать короб»' : 'Нажмите «Сканировать товар»';
-  setBoxFrameColor();
-
-  // Manual panel
-  if (document.getElementById('box-manual').style.display !== 'none') {
-    updateBoxManualUI();
-  }
+  // Frame color
+  const oc = isBox ? 'var(--orange)' : 'var(--accent)';
+  document.getElementById('box-scan-frame').style.borderColor = oc;
+  document.getElementById('box-scan-line').style.background = oc;
+  ['bsc-tl','bsc-tr','bsc-bl','bsc-br'].forEach(id => document.getElementById(id).style.borderColor = oc);
 }
 
 function boxReset() {
-  activeBox = null;
-  boxStep = 'box';
-  boxCurrentProduct = null;
+  activeBox = null; boxStep = 'box'; boxCurrentProduct = null;
   document.getElementById('box-status').classList.remove('show');
   document.getElementById('box-result').classList.remove('show');
   updateBoxStepUI();
-  toast('Выберите новый короб', 'info');
-}
-
-function boxChangeQty(d) {
-  const inp = document.getElementById('box-qty');
-  inp.value = Math.max(1, (parseInt(inp.value)||1) + d);
+  toast('Выберите новый короб','info');
 }
 
 function boxAddItem() {
   if (!boxCurrentProduct || !activeBox) return;
   const qty = parseInt(document.getElementById('box-qty').value) || 1;
   boxItems.push({ product: boxCurrentProduct, qty, box: activeBox, expiry: '' });
-  toast('Товар добавлен ✓');
-  vib(60);
+  toast('Товар добавлен ✓'); vib(60);
   boxRenderList();
+  const cnt = boxItems.filter(i=>i.box===activeBox).length;
+  document.getElementById('box-items-count').textContent = cnt+' поз.';
   document.getElementById('box-result').classList.remove('show');
-  // Update box item count
-  const cnt = boxItems.filter(i => i.box === activeBox).length;
-  document.getElementById('box-items-count').textContent = cnt + ' поз.';
   boxCurrentProduct = null;
 }
 
 document.getElementById('box-qty').addEventListener('keydown', e => { if (e.key==='Enter') boxAddItem(); });
-
-// Manual input for box mode
-function toggleBoxManual() {
-  const s = document.getElementById('box-manual');
-  s.style.display = s.style.display === 'none' ? 'block' : 'none';
-  if (s.style.display === 'block') {
-    updateBoxManualUI();
-    document.getElementById('box-manual-bc').focus();
-  }
-}
 
 function updateBoxManualUI() {
   const isBox = boxStep === 'box';
   document.getElementById('box-manual-label').textContent = isBox ? 'Ручной ввод — короб' : 'Ручной ввод — товар';
   document.getElementById('box-manual-bc').placeholder = isBox ? 'ШК короба' : 'ШК товара';
   document.getElementById('box-manual-qty').style.display = isBox ? 'none' : '';
-  document.getElementById('box-manual-btn').className = 'btn ' + (isBox ? 'btn-orange' : 'btn-green');
+  document.getElementById('box-manual-btn').className = 'btn '+(isBox?'btn-orange':'btn-green');
 }
 
 function boxManualAction() {
   const bc = document.getElementById('box-manual-bc').value.trim();
-  if (!bc || bc.length < 4) { toast('Введите штрихкод', 'err'); return; }
-
+  if (!bc || bc.length < 2) { toast('Введите штрихкод','err'); return; }
+  beep(); vib([30,20,30]);
   if (boxStep === 'box') {
-    activeBox = bc;
-    boxStep = 'product';
-    document.getElementById('box-active-bc').textContent = bc;
-    document.getElementById('box-status').classList.add('show');
-    updateBoxStepUI();
+    boxOnCode(bc);
     updateBoxManualUI();
-    toast('Короб: ' + bc, 'info');
-    vib([40,60,40]);
   } else {
     const qty = parseInt(document.getElementById('box-manual-qty').value) || 1;
     boxItems.push({ product: bc, qty, box: activeBox, expiry: '' });
-    toast('Товар добавлен ✓');
-    vib(60);
+    toast('Товар добавлен ✓'); vib(60);
     boxRenderList();
-    const cnt = boxItems.filter(i => i.box === activeBox).length;
-    document.getElementById('box-items-count').textContent = cnt + ' поз.';
+    const cnt = boxItems.filter(i=>i.box===activeBox).length;
+    document.getElementById('box-items-count').textContent = cnt+' поз.';
   }
   document.getElementById('box-manual-bc').value = '';
   document.getElementById('box-manual-qty').value = 1;
@@ -1153,18 +765,10 @@ function boxManualAction() {
 
 document.getElementById('box-manual-bc').addEventListener('keydown', e => { if (e.key==='Enter') boxManualAction(); });
 
-function boxDeleteItem(idx) {
-  if (confirm('Удалить строку?')) { boxItems.splice(idx,1); boxRenderList(); }
-}
-
+function boxDeleteItem(i) { if (confirm('Удалить строку?')) { boxItems.splice(i,1); boxRenderList(); } }
 function boxClear() {
   if (!boxItems.length) return;
-  if (confirm('Очистить весь список?')) {
-    boxItems = [];
-    boxRenderList();
-    boxReset();
-    toast('Список очищен');
-  }
+  if (confirm('Очистить весь список?')) { boxItems=[]; boxRenderList(); boxReset(); toast('Список очищен'); }
 }
 
 function boxRenderList() {
@@ -1172,31 +776,29 @@ function boxRenderList() {
   document.getElementById('box-count').textContent = boxItems.length;
   if (!boxItems.length) {
     body.innerHTML = `<tr><td colspan="6"><div class="empty-state">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.25">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.25">
         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
       </svg><p>Список пуст. Начните со сканирования короба.</p></div></td></tr>`;
     return;
   }
   body.innerHTML = boxItems.map((item,i) => `
-    <tr>
-      <td class="td-num">${i+1}</td>
-      <td class="td-bc">${item.product}</td>
-      <td class="td-qty">${item.qty}</td>
-      <td class="td-bc-box">${item.box}</td>
-      <td style="font-size:12px;color:var(--muted)">${item.expiry || '—'}</td>
-      <td class="td-del"><button class="del-btn" onclick="boxDeleteItem(${i})">×</button></td>
-    </tr>`).join('');
+    <tr><td class="td-num">${i+1}</td>
+    <td class="td-bc">${item.product}</td>
+    <td class="td-qty">${item.qty}</td>
+    <td class="td-bc-box">${item.box}</td>
+    <td style="font-size:12px;color:var(--muted)">${item.expiry||'—'}</td>
+    <td class="td-del"><button class="del-btn" onclick="boxDeleteItem(${i})">×</button></td></tr>`).join('');
 }
 
 function boxExport() {
-  if (!boxItems.length) { toast('Список пуст', 'err'); return; }
+  if (!boxItems.length) { toast('Список пуст','err'); return; }
   const data = [
     ['Баркод товара','Кол-во товаров','ШК короба','Срок годности'],
-    ...boxItems.map(i => [i.product, i.qty, i.box, i.expiry || ''])
+    ...boxItems.map(i=>[i.product, i.qty, i.box, i.expiry||''])
   ];
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:18},{wch:14},{wch:18},{wch:14}];
+  ws['!cols'] = [{wch:20},{wch:14},{wch:20},{wch:14}];
   XLSX.utils.book_append_sheet(wb, ws, 'По коробам');
   XLSX.writeFile(wb, `boxes_${dateStamp()}.xlsx`);
   toast('Файл сохранён ✓');
@@ -1204,6 +806,7 @@ function boxExport() {
 }
 
 boxRenderList();
+updateBoxStepUI();
 </script>
 </body>
 </html>
