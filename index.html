@@ -526,12 +526,12 @@
     if (code === lastScanned && now - lastScannedTime < 2000) return;
     lastScanned = code; lastScannedTime = now;
     cooldown = true;
-    setTimeout(() => { cooldown = false; }, 1500);
     flash(); vib([40,30,40]);
     currentBarcode = code;
     document.getElementById('barcode-display').textContent = code;
     document.getElementById('qty-input').value = 1;
     document.getElementById('last-scan').classList.add('show');
+    stopScan();
   }
 
   async function stopScan() {
