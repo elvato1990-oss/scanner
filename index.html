@@ -537,6 +537,8 @@
   async function stopScan() {
     if (html5QrCode) { try { await html5QrCode.stop(); } catch(e){} html5QrCode = null; }
     scanning = false;
+    cooldown = false;
+    lastScanned = '';
     document.getElementById('cam-ph').style.display = '';
     document.getElementById('cam-wrap').classList.remove('active');
     document.getElementById('reader').style.display = 'none';
