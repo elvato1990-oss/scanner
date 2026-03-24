@@ -5,332 +5,470 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Сканер штрихкодов</title>
+<title>Сканер</title>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-  :root {
-    --bg: #0f0f0f;
-    --surface: #1a1a1a;
-    --surface2: #252525;
-    --border: #333;
-    --accent: #00e5a0;
-    --accent-dim: #00a070;
-    --text: #f0f0f0;
-    --muted: #888;
-    --danger: #ff4d4d;
-    --radius: 12px;
-  }
+:root {
+  --bg: #0f0f0f;
+  --surface: #1a1a1a;
+  --surface2: #252525;
+  --border: #2e2e2e;
+  --accent: #00e5a0;
+  --accent-dim: #00a070;
+  --text: #f0f0f0;
+  --muted: #777;
+  --danger: #ff4d4d;
+  --orange: #ff8c42;
+  --blue: #4da6ff;
+  --radius: 14px;
+}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-  body {
-    font-family: 'SF Pro Display', -apple-system, 'Segoe UI', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-  }
+body {
+  font-family: 'SF Pro Display', -apple-system, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-  header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
+/* ===== HOME SCREEN ===== */
+.home {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  gap: 20px;
+}
 
-  header .logo {
-    width: 32px; height: 32px;
-    background: var(--accent);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
+.home-logo {
+  width: 72px; height: 72px;
+  background: var(--accent);
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 8px;
+}
 
-  header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+.home-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  text-align: center;
+}
 
-  .count-badge {
-    margin-left: auto;
-    background: var(--accent-dim);
-    color: #000;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 3px 9px;
-    border-radius: 20px;
-    min-width: 28px;
-    text-align: center;
-  }
+.home-sub {
+  font-size: 15px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: -10px;
+  margin-bottom: 12px;
+}
 
-  .main { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.mode-btn {
+  width: 100%;
+  max-width: 360px;
+  padding: 20px 24px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 
-  .camera-card {
-    background: var(--surface);
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    overflow: hidden;
-  }
+.mode-btn:active { transform: scale(0.97); background: var(--surface2); }
 
-  /* Скрываем дефолтный UI html5-qrcode */
-  #reader { border: none !important; width: 100% !important; display: none; }
-  #reader video { width: 100% !important; object-fit: cover; display: block; }
-  #reader__scan_region { background: #000 !important; }
-  #reader__dashboard { display: none !important; }
-  #reader__scan_region img { display: none !important; }
+.mode-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
 
-  .cam-wrap { position: relative; display: none; }
-  .cam-wrap.active { display: block; }
+.mode-icon.inv { background: rgba(0,229,160,0.15); }
+.mode-icon.box { background: rgba(255,140,66,0.15); }
 
-  .scan-frame-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    z-index: 10;
-  }
+.mode-text-title { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
+.mode-text-sub { font-size: 13px; color: var(--muted); }
+.mode-arrow { margin-left: auto; color: var(--muted); flex-shrink: 0; }
 
-  .scan-frame {
-    width: 72%;
-    height: 38%;
-    border: 2px solid var(--accent);
-    border-radius: 8px;
-    box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
-    position: relative;
-  }
+/* ===== APP SCREEN ===== */
+.app-screen { display: none; flex-direction: column; min-height: 100vh; }
+.app-screen.active { display: flex; }
 
-  .scan-line {
-    position: absolute;
-    left: 0; right: 0; top: 10%;
-    height: 2px;
-    background: var(--accent);
-    opacity: 0.85;
-    animation: scanAnim 1.8s ease-in-out infinite;
-  }
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
 
-  @keyframes scanAnim { 0%,100%{top:10%} 50%{top:85%} }
+.back-btn {
+  width: 34px; height: 34px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
 
-  .sc { position: absolute; width: 18px; height: 18px; border-color: var(--accent); border-style: solid; }
-  .sc-tl { top:-2px; left:-2px; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
-  .sc-tr { top:-2px; right:-2px; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
-  .sc-bl { bottom:-2px; left:-2px; border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
-  .sc-br { bottom:-2px; right:-2px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+.back-btn:active { opacity: 0.7; }
 
-  .cam-placeholder {
-    height: 160px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    color: var(--muted);
-  }
+header h1 { font-size: 16px; font-weight: 600; }
 
-  .cam-placeholder p { font-size: 14px; }
+.count-badge {
+  margin-left: auto;
+  background: var(--accent-dim);
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  min-width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
 
-  .camera-controls {
-    padding: 12px 14px;
-    display: flex;
-    gap: 10px;
-  }
+.count-badge.orange { background: var(--orange); }
 
-  .btn {
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    padding: 11px 18px;
-    cursor: pointer;
-    transition: transform 0.15s;
-    display: flex; align-items: center; gap: 7px;
-  }
+.main { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
 
-  .btn:active { transform: scale(0.96); }
-  .btn-primary { background: var(--accent); color: #000; flex: 1; }
-  .btn-stop { background: var(--surface2); color: var(--danger); border: 1px solid var(--border); flex: 1; }
-  .btn-icon { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 11px 14px; }
-  .btn-xls { background: #1a7a3a; color: #fff; }
-  .btn-trash { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 10px 12px; }
+/* ===== CAMERA ===== */
+.camera-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
 
-  .last-scan {
-    background: var(--surface);
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    padding: 14px;
-    display: none;
-  }
-  .last-scan.show { display: block; }
+#reader, #reader2 { border: none !important; width: 100% !important; display: none; }
+#reader video, #reader2 video { width: 100% !important; object-fit: cover; display: block; }
+#reader__scan_region, #reader2__scan_region { background: #000 !important; }
+#reader__dashboard, #reader2__dashboard { display: none !important; }
+#reader__scan_region img, #reader2__scan_region img { display: none !important; }
 
-  .lbl {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
+.cam-wrap { position: relative; display: none; }
+.cam-wrap.active { display: block; }
 
-  .barcode-big {
-    font-family: 'Courier New', monospace;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: 2px;
-    margin-bottom: 12px;
-    word-break: break-all;
-  }
+.scan-frame-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; z-index: 10;
+}
 
-  .qty-row { display: flex; gap: 10px; align-items: center; }
-  .qty-label { font-size: 14px; color: var(--muted); white-space: nowrap; }
+.scan-frame {
+  width: 72%; height: 38%;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
+  position: relative;
+}
 
-  .qty-ctrl {
-    display: flex;
-    align-items: center;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-  }
+.scan-frame.orange-frame { border-color: var(--orange); }
 
-  .qty-btn {
-    width: 40px; height: 40px;
-    background: transparent; border: none;
-    color: var(--accent); font-size: 20px; font-weight: 600;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-  }
-  .qty-btn:active { background: var(--surface); }
+.scan-line {
+  position: absolute; left: 0; right: 0; top: 10%;
+  height: 2px; background: var(--accent); opacity: 0.85;
+  animation: scanAnim 1.8s ease-in-out infinite;
+}
 
-  #qty-input {
-    width: 60px; height: 40px;
-    background: transparent; border: none;
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-    color: var(--text); font-size: 16px; font-weight: 600;
-    text-align: center; outline: none;
-  }
-  #qty-input::-webkit-inner-spin-button,
-  #qty-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.scan-line.orange-line { background: var(--orange); }
 
-  .btn-add {
-    background: var(--accent); color: #000;
-    border: none; border-radius: 10px;
-    font-size: 14px; font-weight: 700;
-    padding: 0 18px; height: 40px;
-    cursor: pointer; flex: 1;
-  }
-  .btn-add:active { opacity: 0.85; }
+@keyframes scanAnim { 0%,100%{top:10%} 50%{top:85%} }
 
-  .manual-section {
-    background: var(--surface);
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    padding: 14px;
-  }
+.sc { position: absolute; width: 18px; height: 18px; border-color: var(--accent); border-style: solid; }
+.sc.orange-sc { border-color: var(--orange); }
+.sc-tl { top:-2px; left:-2px; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+.sc-tr { top:-2px; right:-2px; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+.sc-bl { bottom:-2px; left:-2px; border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+.sc-br { bottom:-2px; right:-2px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
 
-  .manual-row { display: flex; gap: 8px; }
+.cam-placeholder {
+  height: 140px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; color: var(--muted);
+}
 
-  .text-input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-size: 15px;
-    padding: 10px 12px;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .text-input:focus { border-color: var(--accent); }
-  .text-input::placeholder { color: var(--muted); }
+.cam-placeholder p { font-size: 13px; }
 
-  #manual-barcode { flex: 2; font-family: 'Courier New', monospace; letter-spacing: 1px; }
-  #manual-qty { flex: 0 0 70px; text-align: center; }
+.camera-controls { padding: 12px 14px; display: flex; gap: 10px; }
 
-  .list-section {
-    background: var(--surface);
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    overflow: hidden;
-  }
+.btn {
+  border: none; border-radius: 10px;
+  font-size: 14px; font-weight: 600;
+  padding: 11px 16px; cursor: pointer;
+  transition: transform 0.15s;
+  display: flex; align-items: center; gap: 7px;
+}
 
-  .list-header {
-    padding: 12px 14px;
-    display: flex; align-items: center; justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface2);
-  }
+.btn:active { transform: scale(0.96); }
+.btn-green { background: var(--accent); color: #000; flex: 1; }
+.btn-orange { background: var(--orange); color: #000; flex: 1; }
+.btn-stop { background: var(--surface2); color: var(--danger); border: 1px solid var(--border); flex: 1; }
+.btn-icon { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 11px 14px; }
+.btn-xls { background: #1a7a3a; color: #fff; }
+.btn-trash { background: transparent; color: var(--danger); border: 1px solid #3a2020; padding: 10px 12px; }
 
-  .list-actions { display: flex; gap: 8px; }
-  .list-table-wrap { overflow-x: auto; }
+/* ===== INFO CARDS ===== */
+.info-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px;
+}
 
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.lbl {
+  font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--muted);
+  margin-bottom: 6px; display: block;
+}
 
-  thead th {
-    background: var(--surface2);
-    padding: 10px 14px;
-    text-align: left;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--muted);
-    font-weight: 600;
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
+.barcode-big {
+  font-family: 'Courier New', monospace;
+  font-size: 20px; font-weight: 700;
+  letter-spacing: 1.5px; word-break: break-all;
+}
 
-  tbody tr { border-bottom: 1px solid var(--border); }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:active { background: var(--surface2); }
-  td { padding: 11px 14px; vertical-align: middle; }
+.barcode-big.green { color: var(--accent); }
+.barcode-big.orange { color: var(--orange); }
 
-  .td-num { font-size: 12px; color: var(--muted); width: 28px; }
-  .td-bc { font-family: 'Courier New', monospace; font-size: 13px; letter-spacing: 1px; color: var(--accent); }
-  .td-qty { font-weight: 700; font-size: 16px; text-align: center; width: 60px; }
-  .td-del { text-align: center; width: 40px; }
+/* ===== BOX STATUS ===== */
+.box-status {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px;
+  display: none;
+}
 
-  .del-btn {
-    background: transparent; border: none;
-    color: var(--muted); cursor: pointer;
-    font-size: 20px; padding: 4px 8px;
-    border-radius: 6px; line-height: 1;
-  }
-  .del-btn:active { color: var(--danger); background: rgba(255,77,77,0.1); }
+.box-status.show { display: block; }
 
-  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
-  .empty-state p { font-size: 14px; margin-top: 10px; }
+.box-status-row {
+  display: flex; align-items: center; gap: 10px;
+}
 
-  .toast {
-    position: fixed;
-    top: 70px; left: 50%;
-    transform: translateX(-50%) translateY(-20px);
-    background: var(--accent); color: #000;
-    padding: 10px 20px; border-radius: 30px;
-    font-size: 14px; font-weight: 600;
-    opacity: 0; transition: all 0.25s;
-    z-index: 999; white-space: nowrap; pointer-events: none;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .toast.err { background: var(--danger); color: #fff; }
+.box-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--orange);
+  flex-shrink: 0;
+  animation: pulse 1.5s ease-in-out infinite;
+}
 
-  .flash {
-    position: fixed; inset: 0;
-    background: #fff; opacity: 0;
-    pointer-events: none; z-index: 9999;
-    transition: opacity 0.1s;
-  }
-  .flash.active { opacity: 0.3; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-  .safe-bottom { height: 24px; }
+.box-bc {
+  font-family: 'Courier New', monospace;
+  font-size: 15px; font-weight: 700;
+  color: var(--orange); flex: 1;
+}
 
-  @media (min-width: 500px) {
-    .main { max-width: 480px; margin: 0 auto; padding: 20px; }
-  }
+.box-count {
+  font-size: 12px; color: var(--muted);
+}
+
+.change-box-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--orange);
+  font-size: 12px; font-weight: 600;
+  padding: 6px 12px; cursor: pointer;
+}
+
+.change-box-btn:active { opacity: 0.7; }
+
+/* ===== SCAN RESULT (quantity input) ===== */
+.scan-result {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px;
+  display: none;
+}
+
+.scan-result.show { display: block; }
+
+.qty-row { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+.qty-label { font-size: 14px; color: var(--muted); white-space: nowrap; }
+
+.qty-ctrl {
+  display: flex; align-items: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+
+.qty-btn {
+  width: 40px; height: 40px;
+  background: transparent; border: none;
+  color: var(--accent); font-size: 20px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+
+.qty-btn:active { background: var(--surface); }
+
+.qty-inp {
+  width: 60px; height: 40px;
+  background: transparent; border: none;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  color: var(--text); font-size: 16px; font-weight: 600;
+  text-align: center; outline: none;
+}
+
+.qty-inp::-webkit-inner-spin-button,
+.qty-inp::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.btn-add-green {
+  background: var(--accent); color: #000;
+  border: none; border-radius: 10px;
+  font-size: 14px; font-weight: 700;
+  padding: 0 16px; height: 40px;
+  cursor: pointer; flex: 1;
+}
+
+.btn-add-green:active { opacity: 0.85; }
+
+/* ===== MANUAL ===== */
+.manual-section {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px;
+}
+
+.manual-row { display: flex; gap: 8px; }
+
+.text-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text);
+  font-size: 15px; padding: 10px 12px;
+  outline: none; transition: border-color 0.15s;
+}
+
+.text-input:focus { border-color: var(--accent); }
+.text-input::placeholder { color: var(--muted); }
+.text-input.mono { font-family: 'Courier New', monospace; letter-spacing: 1px; }
+
+/* ===== LIST ===== */
+.list-section {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.list-header {
+  padding: 12px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.list-actions { display: flex; gap: 8px; }
+.list-table-wrap { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+thead th {
+  background: var(--surface2);
+  padding: 9px 12px; text-align: left;
+  font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--muted);
+  font-weight: 600; border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+tbody tr { border-bottom: 1px solid var(--border); }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:active { background: var(--surface2); }
+td { padding: 10px 12px; vertical-align: middle; }
+
+.td-num { font-size: 11px; color: var(--muted); width: 24px; }
+.td-bc { font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 0.5px; color: var(--accent); }
+.td-bc-box { font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 0.5px; color: var(--orange); }
+.td-qty { font-weight: 700; font-size: 15px; text-align: center; width: 50px; }
+.td-del { text-align: center; width: 36px; }
+
+.del-btn {
+  background: transparent; border: none;
+  color: var(--muted); cursor: pointer;
+  font-size: 18px; padding: 4px 6px;
+  border-radius: 6px; line-height: 1;
+}
+
+.del-btn:active { color: var(--danger); }
+
+.empty-state { text-align: center; padding: 36px 20px; color: var(--muted); }
+.empty-state p { font-size: 13px; margin-top: 10px; }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed; top: 70px; left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: var(--accent); color: #000;
+  padding: 10px 20px; border-radius: 30px;
+  font-size: 14px; font-weight: 600;
+  opacity: 0; transition: all 0.25s;
+  z-index: 999; white-space: nowrap; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.err { background: var(--danger); color: #fff; }
+.toast.info { background: var(--blue); color: #fff; }
+
+.flash {
+  position: fixed; inset: 0;
+  background: #fff; opacity: 0;
+  pointer-events: none; z-index: 9999;
+  transition: opacity 0.1s;
+}
+.flash.active { opacity: 0.3; }
+
+.safe-bottom { height: 28px; }
+
+/* ===== BOX MODE: step indicator ===== */
+.step-indicator {
+  display: flex; gap: 8px; align-items: center;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.step-pip {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.step-pip.active { background: var(--orange); }
+.step-pip.done { background: var(--accent); }
+
+.step-text { color: var(--muted); }
+.step-text strong { color: var(--text); }
+
+@media (min-width: 500px) {
+  .main { max-width: 480px; margin: 0 auto; padding: 20px; }
+  .home { max-width: 480px; margin: 0 auto; }
+}
 </style>
 </head>
 <body>
@@ -338,9 +476,10 @@
 <div class="flash" id="flash"></div>
 <div class="toast" id="toast"></div>
 
-<header>
-  <div class="logo">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5">
+<!-- ===== HOME ===== -->
+<div class="home" id="home-screen">
+  <div class="home-logo">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5">
       <rect x="2" y="4" width="3" height="16" rx="0.5"/>
       <rect x="7" y="4" width="1.5" height="16" rx="0.5"/>
       <rect x="10.5" y="4" width="3" height="16" rx="0.5"/>
@@ -348,292 +487,723 @@
       <rect x="18.5" y="4" width="3" height="16" rx="0.5"/>
     </svg>
   </div>
-  <h1>Сканер штрихкодов</h1>
-  <div class="count-badge" id="count-badge">0</div>
-</header>
+  <div class="home-title">Сканер штрихкодов</div>
+  <div class="home-sub">Выберите режим работы</div>
 
-<div class="main">
+  <button class="mode-btn" onclick="openMode('inv')">
+    <div class="mode-icon inv">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00e5a0" stroke-width="2">
+        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/>
+        <line x1="9" y1="12" x2="15" y2="12"/>
+        <line x1="9" y1="16" x2="13" y2="16"/>
+      </svg>
+    </div>
+    <div>
+      <div class="mode-text-title">Инвентаризация</div>
+      <div class="mode-text-sub">Сканирование и подсчёт товаров</div>
+    </div>
+    <div class="mode-arrow">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </div>
+  </button>
 
-  <div class="camera-card">
-    <div class="cam-wrap" id="cam-wrap">
-      <div id="reader"></div>
-      <div class="scan-frame-overlay">
-        <div class="scan-frame">
-          <div class="scan-line"></div>
-          <div class="sc sc-tl"></div>
-          <div class="sc sc-tr"></div>
-          <div class="sc sc-bl"></div>
-          <div class="sc sc-br"></div>
+  <button class="mode-btn" onclick="openMode('box')">
+    <div class="mode-icon box">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff8c42" stroke-width="2">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        <line x1="12" y1="22.08" x2="12" y2="12"/>
+      </svg>
+    </div>
+    <div>
+      <div class="mode-text-title">Распределение по коробам</div>
+      <div class="mode-text-sub">Привязка товаров к коробам</div>
+    </div>
+    <div class="mode-arrow">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </div>
+  </button>
+</div>
+
+<!-- ===== ИНВЕНТАРИЗАЦИЯ ===== -->
+<div class="app-screen" id="inv-screen">
+  <header>
+    <div class="back-btn" onclick="goHome('inv')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </div>
+    <h1>Инвентаризация</h1>
+    <div class="count-badge" id="inv-count">0</div>
+  </header>
+
+  <div class="main">
+    <div class="camera-card">
+      <div class="cam-wrap" id="inv-cam-wrap">
+        <div id="reader"></div>
+        <div class="scan-frame-overlay">
+          <div class="scan-frame">
+            <div class="scan-line"></div>
+            <div class="sc sc-tl"></div><div class="sc sc-tr"></div>
+            <div class="sc sc-bl"></div><div class="sc sc-br"></div>
+          </div>
         </div>
       </div>
+      <div class="cam-placeholder" id="inv-cam-ph">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <p>Нажмите «Сканировать»</p>
+      </div>
+      <div class="camera-controls">
+        <button class="btn btn-green" id="inv-btn-scan" onclick="invStartScan()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          Сканировать
+        </button>
+        <button class="btn btn-stop" id="inv-btn-stop" onclick="invStopScan()" style="display:none">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+          </svg>
+          Стоп
+        </button>
+        <button class="btn btn-icon" onclick="toggleInvManual()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+      </div>
     </div>
-    <div class="cam-placeholder" id="cam-ph">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.35">
-        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-        <circle cx="12" cy="13" r="4"/>
+
+    <div class="scan-result" id="inv-result">
+      <span class="lbl">Последнее сканирование</span>
+      <div class="barcode-big green" id="inv-barcode-display">—</div>
+      <div class="qty-row">
+        <span class="qty-label">Кол-во:</span>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="invChangeQty(-1)">−</button>
+          <input type="number" class="qty-inp" id="inv-qty" value="1" min="1" max="9999">
+          <button class="qty-btn" onclick="invChangeQty(1)">+</button>
+        </div>
+        <button class="btn-add-green" onclick="invAddItem()">Добавить ✓</button>
+      </div>
+    </div>
+
+    <div class="manual-section" id="inv-manual" style="display:none">
+      <span class="lbl">Ручной ввод</span>
+      <div class="manual-row">
+        <input class="text-input mono" style="flex:2" type="tel" id="inv-manual-bc" maxlength="13" placeholder="Штрихкод">
+        <input class="text-input" style="flex:0 0 70px;text-align:center" type="number" id="inv-manual-qty" value="1" min="1" placeholder="Кол">
+        <button class="btn btn-green" onclick="invAddManual()" style="padding:10px 14px;flex-shrink:0">+</button>
+      </div>
+    </div>
+
+    <div class="list-section">
+      <div class="list-header">
+        <span class="lbl" style="margin:0">Список товаров</span>
+        <div class="list-actions">
+          <button class="btn btn-xls" onclick="invExport()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            XLS
+          </button>
+          <button class="btn btn-trash" onclick="invClear()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="list-table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Баркод</th><th style="text-align:center">Кол-во</th><th></th></tr></thead>
+          <tbody id="inv-list-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="safe-bottom"></div>
+  </div>
+</div>
+
+<!-- ===== РАСПРЕДЕЛЕНИЕ ПО КОРОБАМ ===== -->
+<div class="app-screen" id="box-screen">
+  <header>
+    <div class="back-btn" onclick="goHome('box')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="15 18 9 12 15 6"/>
       </svg>
-      <p>Нажмите «Сканировать» для запуска камеры</p>
     </div>
-    <div class="camera-controls">
-      <button class="btn btn-primary" id="btn-scan" onclick="startScan()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        Сканировать
-      </button>
-      <button class="btn btn-stop" id="btn-stop" onclick="stopScan()" style="display:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-        </svg>
-        Стоп
-      </button>
-      <button class="btn btn-icon" onclick="toggleManual()" title="Ручной ввод">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-        </svg>
-      </button>
-    </div>
-  </div>
+    <h1>По коробам</h1>
+    <div class="count-badge orange" id="box-count">0</div>
+  </header>
 
-  <div class="last-scan" id="last-scan">
-    <div class="lbl">Последнее сканирование</div>
-    <div class="barcode-big" id="barcode-display">—</div>
-    <div class="qty-row">
-      <span class="qty-label">Кол-во:</span>
-      <div class="qty-ctrl">
-        <button class="qty-btn" onclick="changeQty(-1)">−</button>
-        <input type="number" id="qty-input" value="1" min="1" max="9999">
-        <button class="qty-btn" onclick="changeQty(1)">+</button>
+  <div class="main">
+
+    <!-- Step indicator -->
+    <div class="step-indicator" id="box-step-indicator">
+      <div class="step-pip active" id="step-pip-1"></div>
+      <div class="step-pip" id="step-pip-2"></div>
+      <div class="step-text" id="box-step-text"><strong>Шаг 1:</strong> Отсканируйте штрихкод короба</div>
+    </div>
+
+    <!-- Camera -->
+    <div class="camera-card">
+      <div class="cam-wrap" id="box-cam-wrap">
+        <div id="reader2"></div>
+        <div class="scan-frame-overlay" id="box-frame-overlay">
+          <div class="scan-frame" id="box-scan-frame">
+            <div class="scan-line" id="box-scan-line"></div>
+            <div class="sc sc-tl" id="box-sc-tl"></div><div class="sc sc-tr" id="box-sc-tr"></div>
+            <div class="sc sc-bl" id="box-sc-bl"></div><div class="sc sc-br" id="box-sc-br"></div>
+          </div>
+        </div>
       </div>
-      <button class="btn-add" onclick="addItem()">Добавить ✓</button>
-    </div>
-  </div>
-
-  <div class="manual-section" id="manual-section" style="display:none">
-    <div class="lbl">Ручной ввод EAN-13</div>
-    <div class="manual-row">
-      <input class="text-input" type="tel" id="manual-barcode" maxlength="13" placeholder="4600001234567">
-      <input class="text-input" type="number" id="manual-qty" value="1" min="1" max="9999" placeholder="Кол">
-      <button class="btn btn-primary" onclick="addManual()" style="padding:10px 14px;flex-shrink:0">+</button>
-    </div>
-  </div>
-
-  <div class="list-section">
-    <div class="list-header">
-      <span class="lbl" style="margin:0">Список товаров</span>
-      <div class="list-actions">
-        <button class="btn btn-xls" onclick="exportXLS()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="8" y1="13" x2="16" y2="13"/>
-            <line x1="8" y1="17" x2="16" y2="17"/>
+      <div class="cam-placeholder" id="box-cam-ph">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <p id="box-cam-hint">Нажмите «Сканировать короб»</p>
+      </div>
+      <div class="camera-controls">
+        <button class="btn btn-orange" id="box-btn-scan" onclick="boxStartScan()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
           </svg>
-          XLS
+          <span id="box-btn-label">Сканировать короб</span>
         </button>
-        <button class="btn btn-trash" onclick="clearAll()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        <button class="btn btn-stop" id="box-btn-stop" onclick="boxStopScan()" style="display:none">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+          </svg>
+          Стоп
+        </button>
+        <button class="btn btn-icon" onclick="toggleBoxManual()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
           </svg>
         </button>
       </div>
     </div>
-    <div class="list-table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>EAN-13</th>
-            <th style="text-align:center">Кол-во</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="list-body"></tbody>
-      </table>
-    </div>
-  </div>
 
-  <div class="safe-bottom"></div>
+    <!-- Active box status -->
+    <div class="box-status" id="box-status">
+      <div class="box-status-row">
+        <div class="box-dot"></div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">Активный короб</div>
+          <div class="box-bc" id="box-active-bc">—</div>
+        </div>
+        <div class="box-count" id="box-items-count">0 поз.</div>
+        <button class="change-box-btn" onclick="boxReset()">Сменить</button>
+      </div>
+    </div>
+
+    <!-- Product scan result -->
+    <div class="scan-result" id="box-result">
+      <span class="lbl">Товар для короба</span>
+      <div class="barcode-big green" id="box-product-display">—</div>
+      <div class="qty-row">
+        <span class="qty-label">Кол-во:</span>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="boxChangeQty(-1)">−</button>
+          <input type="number" class="qty-inp" id="box-qty" value="1" min="1" max="9999">
+          <button class="qty-btn" onclick="boxChangeQty(1)">+</button>
+        </div>
+        <button class="btn-add-green" onclick="boxAddItem()">Добавить ✓</button>
+      </div>
+    </div>
+
+    <!-- Manual input -->
+    <div class="manual-section" id="box-manual" style="display:none">
+      <span class="lbl" id="box-manual-label">Ручной ввод — короб</span>
+      <div class="manual-row">
+        <input class="text-input mono" style="flex:2" type="tel" id="box-manual-bc" maxlength="20" placeholder="Штрихкод">
+        <input class="text-input" style="flex:0 0 70px;text-align:center;display:none" type="number" id="box-manual-qty" value="1" min="1" placeholder="Кол">
+        <button class="btn btn-orange" id="box-manual-btn" onclick="boxManualAction()" style="padding:10px 14px;flex-shrink:0">OK</button>
+      </div>
+    </div>
+
+    <!-- List -->
+    <div class="list-section">
+      <div class="list-header">
+        <span class="lbl" style="margin:0">Список</span>
+        <div class="list-actions">
+          <button class="btn btn-xls" onclick="boxExport()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            XLS
+          </button>
+          <button class="btn btn-trash" onclick="boxClear()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="list-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Баркод товара</th>
+              <th style="text-align:center">Кол-во</th>
+              <th>ШК короба</th>
+              <th>Срок годн.</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="box-list-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="safe-bottom"></div>
+  </div>
 </div>
 
 <script>
-  let items = [];
-  let currentBarcode = null;
-  let html5QrCode = null;
-  let scanning = false;
-  let lastScanned = '';
-  let lastScannedTime = 0;
-  let cooldown = false;
+// ===== UTILS =====
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.className = 'toast', 2400);
+}
 
-  function toast(msg, isErr) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast show' + (isErr ? ' err' : '');
-    clearTimeout(t._tid);
-    t._tid = setTimeout(() => t.className = 'toast', 2200);
+function flashScreen() {
+  const f = document.getElementById('flash');
+  f.classList.add('active');
+  setTimeout(() => f.classList.remove('active'), 120);
+}
+
+function vib(p) { if (navigator.vibrate) navigator.vibrate(p); }
+
+function dateStamp() {
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// ===== HOME =====
+function openMode(mode) {
+  document.getElementById('home-screen').style.display = 'none';
+  document.getElementById(mode + '-screen').classList.add('active');
+}
+
+function goHome(mode) {
+  if (mode === 'inv') invStopScan();
+  if (mode === 'box') boxStopScan();
+  document.getElementById(mode + '-screen').classList.remove('active');
+  document.getElementById('home-screen').style.display = '';
+}
+
+// ============================================================
+// ===== ИНВЕНТАРИЗАЦИЯ =====
+// ============================================================
+let invItems = [];
+let invQrCode = null;
+let invScanning = false;
+let invCooldown = false;
+let invLastCode = '';
+let invCurrentBarcode = null;
+
+async function invStartScan() {
+  if (invScanning) return;
+  try {
+    invQrCode = new Html5Qrcode("reader");
+    await invQrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 260, height: 110 }, aspectRatio: 1.5,
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E
+        ]
+      },
+      invOnScan, null
+    );
+    invScanning = true;
+    document.getElementById('inv-cam-ph').style.display = 'none';
+    document.getElementById('inv-cam-wrap').classList.add('active');
+    document.getElementById('reader').style.display = 'block';
+    document.getElementById('inv-btn-scan').style.display = 'none';
+    document.getElementById('inv-btn-stop').style.display = '';
+  } catch(e) {
+    let msg = /NotAllowed|Permission|denied/i.test(e+'') ? 'Нет доступа к камере' : 'Ошибка: ' + e;
+    toast(msg, 'err');
   }
+}
 
-  function flash() {
-    const f = document.getElementById('flash');
-    f.classList.add('active');
-    setTimeout(() => f.classList.remove('active'), 120);
+function invOnScan(code) {
+  if (invCooldown) return;
+  const now = Date.now();
+  if (code === invLastCode && now - invLastCode < 2000) return;
+  invLastCode = code;
+  invCooldown = true;
+  flashScreen(); vib([40,30,40]);
+  invCurrentBarcode = code;
+  document.getElementById('inv-barcode-display').textContent = code;
+  document.getElementById('inv-qty').value = 1;
+  document.getElementById('inv-result').classList.add('show');
+  invStopScan();
+}
+
+async function invStopScan() {
+  if (invQrCode) { try { await invQrCode.stop(); } catch(e){} invQrCode = null; }
+  invScanning = false;
+  invCooldown = false;
+  invLastCode = '';
+  document.getElementById('inv-cam-ph').style.display = '';
+  document.getElementById('inv-cam-wrap').classList.remove('active');
+  document.getElementById('reader').style.display = 'none';
+  document.getElementById('inv-btn-scan').style.display = '';
+  document.getElementById('inv-btn-stop').style.display = 'none';
+}
+
+function invChangeQty(d) {
+  const inp = document.getElementById('inv-qty');
+  inp.value = Math.max(1, (parseInt(inp.value)||1) + d);
+}
+
+function invAddItem() {
+  if (!invCurrentBarcode) return;
+  const qty = parseInt(document.getElementById('inv-qty').value) || 1;
+  const ex = invItems.find(i => i.barcode === invCurrentBarcode);
+  if (ex) { ex.qty += qty; toast('Обновлено: +' + qty + ' шт'); }
+  else { invItems.push({ barcode: invCurrentBarcode, qty }); toast('Добавлено ✓'); }
+  vib(60);
+  invRenderList();
+  document.getElementById('inv-result').classList.remove('show');
+  invCurrentBarcode = null;
+}
+
+function toggleInvManual() {
+  const s = document.getElementById('inv-manual');
+  s.style.display = s.style.display === 'none' ? 'block' : 'none';
+  if (s.style.display === 'block') document.getElementById('inv-manual-bc').focus();
+}
+
+function invAddManual() {
+  const bc = document.getElementById('inv-manual-bc').value.trim();
+  const qty = parseInt(document.getElementById('inv-manual-qty').value) || 1;
+  if (!bc || bc.length < 4) { toast('Введите штрихкод', 'err'); return; }
+  const ex = invItems.find(i => i.barcode === bc);
+  if (ex) { ex.qty += qty; toast('Обновлено: +' + qty + ' шт'); }
+  else { invItems.push({ barcode: bc, qty }); toast('Добавлено ✓'); }
+  vib(60);
+  document.getElementById('inv-manual-bc').value = '';
+  document.getElementById('inv-manual-qty').value = 1;
+  invRenderList();
+  document.getElementById('inv-manual-bc').focus();
+}
+
+document.getElementById('inv-manual-bc').addEventListener('keydown', e => { if (e.key==='Enter') invAddManual(); });
+document.getElementById('inv-qty').addEventListener('keydown', e => { if (e.key==='Enter') invAddItem(); });
+
+function invDeleteItem(idx) {
+  if (confirm('Удалить строку?')) { invItems.splice(idx,1); invRenderList(); }
+}
+
+function invClear() {
+  if (!invItems.length) return;
+  if (confirm('Очистить весь список?')) { invItems=[]; invRenderList(); toast('Список очищен'); }
+}
+
+function invRenderList() {
+  const body = document.getElementById('inv-list-body');
+  document.getElementById('inv-count').textContent = invItems.length;
+  if (!invItems.length) {
+    body.innerHTML = `<tr><td colspan="4"><div class="empty-state">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.25">
+        <rect x="2" y="4" width="3" height="16" rx="0.5"/><rect x="7" y="4" width="1.5" height="16" rx="0.5"/>
+        <rect x="10.5" y="4" width="3" height="16" rx="0.5"/><rect x="15.5" y="4" width="1.5" height="16" rx="0.5"/>
+        <rect x="18.5" y="4" width="3" height="16" rx="0.5"/>
+      </svg><p>Список пуст</p></div></td></tr>`;
+    return;
   }
+  body.innerHTML = invItems.map((item,i) => `
+    <tr>
+      <td class="td-num">${i+1}</td>
+      <td class="td-bc">${item.barcode}</td>
+      <td class="td-qty">${item.qty}</td>
+      <td class="td-del"><button class="del-btn" onclick="invDeleteItem(${i})">×</button></td>
+    </tr>`).join('');
+}
 
-  function vib(p) { if (navigator.vibrate) navigator.vibrate(p); }
+function invExport() {
+  if (!invItems.length) { toast('Список пуст', 'err'); return; }
+  const data = [['Баркод','Количество'], ...invItems.map(i=>[i.barcode, i.qty])];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{wch:18},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Инвентаризация');
+  XLSX.writeFile(wb, `inventory_${dateStamp()}.xlsx`);
+  toast('Файл сохранён ✓');
+  vib([40,20,40,20,80]);
+}
 
-  async function startScan() {
-    if (scanning) return;
-    try {
-      html5QrCode = new Html5Qrcode("reader");
-      await html5QrCode.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 110 },
-          aspectRatio: 1.5,
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E
-          ]
-        },
-        onScan,
-        null
-      );
-      scanning = true;
-      document.getElementById('cam-ph').style.display = 'none';
-      document.getElementById('cam-wrap').classList.add('active');
-      document.getElementById('reader').style.display = 'block';
-      document.getElementById('btn-scan').style.display = 'none';
-      document.getElementById('btn-stop').style.display = '';
-    } catch(e) {
-      let msg = e + '';
-      if (/NotAllowed|Permission|denied/i.test(msg)) msg = 'Нет доступа к камере. Разрешите доступ в настройках.';
-      else if (/NotFound/i.test(msg)) msg = 'Камера не найдена.';
-      else msg = 'Ошибка: ' + msg;
-      toast(msg, true);
-    }
+invRenderList();
+
+// ============================================================
+// ===== РАСПРЕДЕЛЕНИЕ ПО КОРОБАМ =====
+// ============================================================
+let boxItems = [];
+let boxQrCode = null;
+let boxScanning = false;
+let boxCooldown = false;
+let boxLastCode = '';
+
+// Состояние: 'box' = ждём короб, 'product' = ждём товар
+let boxStep = 'box';
+let activeBox = null;
+let boxCurrentProduct = null;
+
+async function boxStartScan() {
+  if (boxScanning) return;
+  try {
+    boxQrCode = new Html5Qrcode("reader2");
+    await boxQrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 260, height: 110 }, aspectRatio: 1.5,
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E
+        ]
+      },
+      boxOnScan, null
+    );
+    boxScanning = true;
+    document.getElementById('box-cam-ph').style.display = 'none';
+    document.getElementById('box-cam-wrap').classList.add('active');
+    document.getElementById('reader2').style.display = 'block';
+    document.getElementById('box-btn-scan').style.display = 'none';
+    document.getElementById('box-btn-stop').style.display = '';
+    // Color frame based on step
+    setBoxFrameColor();
+  } catch(e) {
+    let msg = /NotAllowed|Permission|denied/i.test(e+'') ? 'Нет доступа к камере' : 'Ошибка: ' + e;
+    toast(msg, 'err');
   }
+}
 
-  function onScan(code) {
-    if (cooldown) return;
-    const now = Date.now();
-    if (code === lastScanned && now - lastScannedTime < 2000) return;
-    lastScanned = code; lastScannedTime = now;
-    cooldown = true;
-    flash(); vib([40,30,40]);
-    currentBarcode = code;
-    document.getElementById('barcode-display').textContent = code;
-    document.getElementById('qty-input').value = 1;
-    document.getElementById('last-scan').classList.add('show');
-    stopScan();
+function setBoxFrameColor() {
+  const isBox = boxStep === 'box';
+  const frame = document.getElementById('box-scan-frame');
+  const line = document.getElementById('box-scan-line');
+  ['box-sc-tl','box-sc-tr','box-sc-bl','box-sc-br'].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.borderColor = isBox ? 'var(--orange)' : 'var(--accent)';
+  });
+  frame.style.borderColor = isBox ? 'var(--orange)' : 'var(--accent)';
+  line.style.background = isBox ? 'var(--orange)' : 'var(--accent)';
+}
+
+function boxOnScan(code) {
+  if (boxCooldown) return;
+  const now = Date.now();
+  if (code === boxLastCode && now - (boxOnScan._last||0) < 2000) return;
+  boxOnScan._last = now;
+  boxLastCode = code;
+  boxCooldown = true;
+  flashScreen();
+  boxStopScan();
+
+  if (boxStep === 'box') {
+    // Scanned a box
+    activeBox = code;
+    boxStep = 'product';
+    document.getElementById('box-active-bc').textContent = code;
+    document.getElementById('box-status').classList.add('show');
+    updateBoxStepUI();
+    vib([40, 60, 40]);
+    toast('Короб: ' + code, 'info');
+  } else {
+    // Scanned a product
+    vib([40,30,40]);
+    boxCurrentProduct = code;
+    document.getElementById('box-product-display').textContent = code;
+    document.getElementById('box-qty').value = 1;
+    document.getElementById('box-result').classList.add('show');
   }
+}
 
-  async function stopScan() {
-    if (html5QrCode) { try { await html5QrCode.stop(); } catch(e){} html5QrCode = null; }
-    scanning = false;
-    cooldown = false;
-    lastScanned = '';
-    document.getElementById('cam-ph').style.display = '';
-    document.getElementById('cam-wrap').classList.remove('active');
-    document.getElementById('reader').style.display = 'none';
-    document.getElementById('btn-scan').style.display = '';
-    document.getElementById('btn-stop').style.display = 'none';
+async function boxStopScan() {
+  if (boxQrCode) { try { await boxQrCode.stop(); } catch(e){} boxQrCode = null; }
+  boxScanning = false;
+  boxCooldown = false;
+  boxLastCode = '';
+  document.getElementById('box-cam-ph').style.display = '';
+  document.getElementById('box-cam-wrap').classList.remove('active');
+  document.getElementById('reader2').style.display = 'none';
+  document.getElementById('box-btn-scan').style.display = '';
+  document.getElementById('box-btn-stop').style.display = 'none';
+}
+
+function updateBoxStepUI() {
+  const isBox = boxStep === 'box';
+  document.getElementById('step-pip-1').className = 'step-pip' + (isBox ? ' active' : ' done');
+  document.getElementById('step-pip-2').className = 'step-pip' + (!isBox ? ' active' : '');
+  document.getElementById('box-step-text').innerHTML = isBox
+    ? '<strong>Шаг 1:</strong> Отсканируйте штрихкод короба'
+    : '<strong>Шаг 2:</strong> Отсканируйте товар';
+  document.getElementById('box-btn-label').textContent = isBox ? 'Сканировать короб' : 'Сканировать товар';
+  document.getElementById('box-btn-scan').className = 'btn ' + (isBox ? 'btn-orange' : 'btn-green');
+  document.getElementById('box-cam-hint').textContent = isBox ? 'Нажмите «Сканировать короб»' : 'Нажмите «Сканировать товар»';
+  setBoxFrameColor();
+
+  // Manual panel
+  if (document.getElementById('box-manual').style.display !== 'none') {
+    updateBoxManualUI();
   }
+}
 
-  function changeQty(d) {
-    const inp = document.getElementById('qty-input');
-    inp.value = Math.max(1, (parseInt(inp.value) || 1) + d);
+function boxReset() {
+  activeBox = null;
+  boxStep = 'box';
+  boxCurrentProduct = null;
+  document.getElementById('box-status').classList.remove('show');
+  document.getElementById('box-result').classList.remove('show');
+  updateBoxStepUI();
+  toast('Выберите новый короб', 'info');
+}
+
+function boxChangeQty(d) {
+  const inp = document.getElementById('box-qty');
+  inp.value = Math.max(1, (parseInt(inp.value)||1) + d);
+}
+
+function boxAddItem() {
+  if (!boxCurrentProduct || !activeBox) return;
+  const qty = parseInt(document.getElementById('box-qty').value) || 1;
+  boxItems.push({ product: boxCurrentProduct, qty, box: activeBox, expiry: '' });
+  toast('Товар добавлен ✓');
+  vib(60);
+  boxRenderList();
+  document.getElementById('box-result').classList.remove('show');
+  // Update box item count
+  const cnt = boxItems.filter(i => i.box === activeBox).length;
+  document.getElementById('box-items-count').textContent = cnt + ' поз.';
+  boxCurrentProduct = null;
+}
+
+document.getElementById('box-qty').addEventListener('keydown', e => { if (e.key==='Enter') boxAddItem(); });
+
+// Manual input for box mode
+function toggleBoxManual() {
+  const s = document.getElementById('box-manual');
+  s.style.display = s.style.display === 'none' ? 'block' : 'none';
+  if (s.style.display === 'block') {
+    updateBoxManualUI();
+    document.getElementById('box-manual-bc').focus();
   }
+}
 
-  function addItem() {
-    if (!currentBarcode) return;
-    const qty = parseInt(document.getElementById('qty-input').value) || 1;
-    const ex = items.find(i => i.barcode === currentBarcode);
-    if (ex) { ex.qty += qty; toast('Обновлено: +' + qty + ' шт'); }
-    else { items.push({ barcode: currentBarcode, qty }); toast('Добавлено ✓'); }
-    vib(60); renderList();
-    document.getElementById('last-scan').classList.remove('show');
-    currentBarcode = null;
-  }
+function updateBoxManualUI() {
+  const isBox = boxStep === 'box';
+  document.getElementById('box-manual-label').textContent = isBox ? 'Ручной ввод — короб' : 'Ручной ввод — товар';
+  document.getElementById('box-manual-bc').placeholder = isBox ? 'ШК короба' : 'ШК товара';
+  document.getElementById('box-manual-qty').style.display = isBox ? 'none' : '';
+  document.getElementById('box-manual-btn').className = 'btn ' + (isBox ? 'btn-orange' : 'btn-green');
+}
 
-  function toggleManual() {
-    const s = document.getElementById('manual-section');
-    s.style.display = s.style.display === 'none' ? 'block' : 'none';
-    if (s.style.display === 'block') document.getElementById('manual-barcode').focus();
-  }
+function boxManualAction() {
+  const bc = document.getElementById('box-manual-bc').value.trim();
+  if (!bc || bc.length < 4) { toast('Введите штрихкод', 'err'); return; }
 
-  function addManual() {
-    const bc = document.getElementById('manual-barcode').value.trim();
-    const qty = parseInt(document.getElementById('manual-qty').value) || 1;
-    if (!bc || bc.length < 8) { toast('Введите корректный штрихкод', true); return; }
-    const ex = items.find(i => i.barcode === bc);
-    if (ex) { ex.qty += qty; toast('Обновлено: +' + qty + ' шт'); }
-    else { items.push({ barcode: bc, qty }); toast('Добавлено ✓'); }
+  if (boxStep === 'box') {
+    activeBox = bc;
+    boxStep = 'product';
+    document.getElementById('box-active-bc').textContent = bc;
+    document.getElementById('box-status').classList.add('show');
+    updateBoxStepUI();
+    updateBoxManualUI();
+    toast('Короб: ' + bc, 'info');
+    vib([40,60,40]);
+  } else {
+    const qty = parseInt(document.getElementById('box-manual-qty').value) || 1;
+    boxItems.push({ product: bc, qty, box: activeBox, expiry: '' });
+    toast('Товар добавлен ✓');
     vib(60);
-    document.getElementById('manual-barcode').value = '';
-    document.getElementById('manual-qty').value = 1;
-    renderList();
-    document.getElementById('manual-barcode').focus();
+    boxRenderList();
+    const cnt = boxItems.filter(i => i.box === activeBox).length;
+    document.getElementById('box-items-count').textContent = cnt + ' поз.';
   }
+  document.getElementById('box-manual-bc').value = '';
+  document.getElementById('box-manual-qty').value = 1;
+  document.getElementById('box-manual-bc').focus();
+}
 
-  document.getElementById('manual-barcode').addEventListener('keydown', e => { if (e.key === 'Enter') addManual(); });
-  document.getElementById('qty-input').addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
+document.getElementById('box-manual-bc').addEventListener('keydown', e => { if (e.key==='Enter') boxManualAction(); });
 
-  function deleteItem(idx) {
-    if (confirm('Удалить строку?')) { items.splice(idx, 1); renderList(); }
+function boxDeleteItem(idx) {
+  if (confirm('Удалить строку?')) { boxItems.splice(idx,1); boxRenderList(); }
+}
+
+function boxClear() {
+  if (!boxItems.length) return;
+  if (confirm('Очистить весь список?')) {
+    boxItems = [];
+    boxRenderList();
+    boxReset();
+    toast('Список очищен');
   }
+}
 
-  function clearAll() {
-    if (!items.length) return;
-    if (confirm('Очистить весь список (' + items.length + ' позиций)?')) { items = []; renderList(); toast('Список очищен'); }
+function boxRenderList() {
+  const body = document.getElementById('box-list-body');
+  document.getElementById('box-count').textContent = boxItems.length;
+  if (!boxItems.length) {
+    body.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.25">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      </svg><p>Список пуст. Начните со сканирования короба.</p></div></td></tr>`;
+    return;
   }
+  body.innerHTML = boxItems.map((item,i) => `
+    <tr>
+      <td class="td-num">${i+1}</td>
+      <td class="td-bc">${item.product}</td>
+      <td class="td-qty">${item.qty}</td>
+      <td class="td-bc-box">${item.box}</td>
+      <td style="font-size:12px;color:var(--muted)">${item.expiry || '—'}</td>
+      <td class="td-del"><button class="del-btn" onclick="boxDeleteItem(${i})">×</button></td>
+    </tr>`).join('');
+}
 
-  function renderList() {
-    const body = document.getElementById('list-body');
-    document.getElementById('count-badge').textContent = items.length;
-    if (!items.length) {
-      body.innerHTML = `<tr><td colspan="4"><div class="empty-state">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3">
-          <rect x="2" y="4" width="3" height="16" rx="0.5"/>
-          <rect x="7" y="4" width="1.5" height="16" rx="0.5"/>
-          <rect x="10.5" y="4" width="3" height="16" rx="0.5"/>
-          <rect x="15.5" y="4" width="1.5" height="16" rx="0.5"/>
-          <rect x="18.5" y="4" width="3" height="16" rx="0.5"/>
-        </svg>
-        <p>Список пуст. Отсканируйте первый товар.</p>
-      </div></td></tr>`;
-      return;
-    }
-    body.innerHTML = items.map((item, i) => `
-      <tr>
-        <td class="td-num">${i+1}</td>
-        <td class="td-bc">${item.barcode}</td>
-        <td class="td-qty">${item.qty}</td>
-        <td class="td-del"><button class="del-btn" onclick="deleteItem(${i})">×</button></td>
-      </tr>`).join('');
-  }
+function boxExport() {
+  if (!boxItems.length) { toast('Список пуст', 'err'); return; }
+  const data = [
+    ['Баркод товара','Кол-во товаров','ШК короба','Срок годности'],
+    ...boxItems.map(i => [i.product, i.qty, i.box, i.expiry || ''])
+  ];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{wch:18},{wch:14},{wch:18},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'По коробам');
+  XLSX.writeFile(wb, `boxes_${dateStamp()}.xlsx`);
+  toast('Файл сохранён ✓');
+  vib([40,20,40,20,80]);
+}
 
-  function exportXLS() {
-    if (!items.length) { toast('Список пуст', true); return; }
-    const data = [['EAN-13', 'Количество'], ...items.map(i => [i.barcode, i.qty])];
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [{ wch: 18 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, ws, 'Сканирование');
-    const d = new Date();
-    const fname = `scan_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.xlsx`;
-    XLSX.writeFile(wb, fname);
-    toast('Файл сохранён: ' + fname);
-    vib([40,20,40,20,80]);
-  }
-
-  renderList();
+boxRenderList();
 </script>
 </body>
 </html>
