@@ -471,14 +471,6 @@ async function camStart(mode) {
       delayBetweenScanSuccess: 1500,
     });
 
-    // Выбираем заднюю камеру
-    const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
-    let deviceId;
-    if (devices.length > 0) {
-      const back = devices.find(d => /back|rear|environment/i.test(d.label));
-      deviceId = (back || devices[devices.length - 1]).deviceId;
-    }
-
     const vidId = mode + '-vid';
     const vid = document.getElementById(vidId);
     vid.style.display = 'block';
@@ -488,19 +480,24 @@ async function camStart(mode) {
     document.getElementById(mode+'-stop-btn').style.display = '';
     c.running = true;
 
-    await c.reader.decodeFromVideoDevice(deviceId || null, vidId, (result, err) => {
-      if (!result || !c.running) return;
-      const code = result.getText();
-      const now = Date.now();
-      if (code === c.lastCode && now - c.lastTime < 2000) return;
-      c.lastCode = code;
-      c.lastTime = now;
-      beep();
-      flash();
-      vib([30, 20, 30]);
-      camStop(mode);
-      onCode(mode, code);
-    });
+    // Используем facingMode без listVideoInputDevices (несовместим с ZXing 0.20)
+    await c.reader.decodeFromConstraints(
+      { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } },
+      vidId,
+      (result, err) => {
+        if (!result || !c.running) return;
+        const code = result.getText();
+        const now = Date.now();
+        if (code === c.lastCode && now - c.lastTime < 2000) return;
+        c.lastCode = code;
+        c.lastTime = now;
+        beep();
+        flash();
+        vib([30, 20, 30]);
+        camStop(mode);
+        onCode(mode, code);
+      }
+    );
 
   } catch(e) {
     let msg = String(e);
