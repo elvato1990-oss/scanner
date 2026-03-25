@@ -9,804 +9,871 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
 <style>
-:root {
-  --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#252525; --border:#2e2e2e;
-  --accent:#00e5a0; --accent-dim:#00a070; --text:#f0f0f0; --muted:#777;
-  --danger:#ff4d4d; --orange:#ff8c42; --blue:#4da6ff; --radius:14px;
+:root{
+  --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#252525;--border:#2e2e2e;
+  --accent:#00e5a0;--accent-dim:#00a070;--text:#f0f0f0;--muted:#666;
+  --danger:#ff4d4d;--orange:#ff8c42;--blue:#4da6ff;--r:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'SF Pro Display',-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+body{font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
 
-/* HOME */
-.home{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:20px}
-.home-logo{width:72px;height:72px;background:var(--accent);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
-.home-title{font-size:26px;font-weight:700;letter-spacing:-.5px;text-align:center}
-.home-sub{font-size:15px;color:var(--muted);text-align:center;margin-top:-10px;margin-bottom:12px}
-.mode-btn{width:100%;max-width:360px;padding:20px 24px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);text-align:left;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:16px}
-.mode-btn:active{transform:scale(.97);background:var(--surface2)}
-.mode-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mode-icon.inv{background:rgba(0,229,160,.15)}
-.mode-icon.box{background:rgba(255,140,66,.15)}
-.mode-text-title{font-size:16px;font-weight:600;margin-bottom:3px}
+/* ── HOME ─────────────────────────────── */
+#home{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:18px}
+.home-logo{width:68px;height:68px;background:var(--accent);border-radius:18px;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+.home-title{font-size:24px;font-weight:700;letter-spacing:-.5px;text-align:center}
+.home-sub{font-size:14px;color:var(--muted);margin-top:-8px;margin-bottom:8px}
+.mode-btn{width:100%;max-width:380px;padding:18px 20px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);color:var(--text);text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:background .1s}
+.mode-btn:active{background:var(--surface2)}
+.mode-icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mi-inv{background:rgba(0,229,160,.13)}
+.mi-box{background:rgba(255,140,66,.13)}
+.mode-text-title{font-size:16px;font-weight:600;margin-bottom:2px}
 .mode-text-sub{font-size:13px;color:var(--muted)}
 .mode-arrow{margin-left:auto;color:var(--muted);flex-shrink:0}
 
-/* APP */
-.app-screen{display:none;flex-direction:column;min-height:100vh}
-.app-screen.active{display:flex}
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
-.back-btn{width:34px;height:34px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-.back-btn:active{opacity:.7}
+/* ── SCREEN ───────────────────────────── */
+.screen{display:none;flex-direction:column;min-height:100vh}
+.screen.on{display:flex}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:200}
+.back{width:34px;height:34px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.back:active{opacity:.7}
 header h1{font-size:16px;font-weight:600}
-.count-badge{margin-left:auto;background:var(--accent-dim);color:#000;font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;min-width:28px;text-align:center;flex-shrink:0}
-.count-badge.orange{background:var(--orange)}
-.main{flex:1;padding:14px;display:flex;flex-direction:column;gap:14px}
+.badge{margin-left:auto;color:#000;font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;min-width:26px;text-align:center;flex-shrink:0}
+.badge.g{background:var(--accent-dim)}
+.badge.o{background:var(--orange)}
 
-/* CAMERA */
-.camera-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
-.cam-wrap{position:relative;display:none;background:#000}
-.cam-wrap.active{display:block}
-.cam-wrap video{width:100%;display:block;max-height:280px;object-fit:cover}
-.scan-frame-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:10}
-.scan-frame{width:78%;height:40%;border:2px solid var(--accent);border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);position:relative}
-.scan-frame.orange-frame{border-color:var(--orange)}
-.scan-line{position:absolute;left:0;right:0;top:10%;height:2px;background:var(--accent);opacity:.9;animation:scanAnim 1.6s ease-in-out infinite}
-.scan-line.orange-line{background:var(--orange)}
-@keyframes scanAnim{0%,100%{top:10%}50%{top:85%}}
-.sc{position:absolute;width:20px;height:20px;border-color:var(--accent);border-style:solid}
-.sc.o{border-color:var(--orange)}
-.sc-tl{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
-.sc-tr{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
-.sc-bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
-.sc-br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
-.cam-placeholder{height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted)}
+.main{flex:1;padding:12px;display:flex;flex-direction:column;gap:12px;padding-bottom:24px}
+
+/* ── CAMERA FULLSCREEN ────────────────── */
+.cam-card{background:#000;border-radius:var(--r);overflow:hidden;position:relative}
+
+/* Видео в portrait — высокое */
+.cam-card video{
+  width:100%;
+  display:block;
+  height:60vw;          /* landscape fallback */
+  object-fit:cover;
+}
+
+/* На телефоне в портретном — делаем высокое окно */
+@media (max-aspect-ratio: 1/1){
+  .cam-card video{ height:72vw; }
+}
+
+.cam-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:10}
+
+/* Рамка сканирования — вертикальная для баркодов */
+.scan-box{
+  width:82%;
+  height:36%;
+  border:2px solid var(--accent);
+  border-radius:10px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.55);
+  position:relative;
+}
+.scan-box.org{border-color:var(--orange)}
+
+.scan-line{position:absolute;left:4px;right:4px;top:12%;height:2px;border-radius:1px;background:var(--accent);opacity:.95;animation:scanY 1.5s ease-in-out infinite}
+.scan-line.org{background:var(--orange)}
+@keyframes scanY{0%,100%{top:12%}50%{top:82%}}
+
+.corner{position:absolute;width:22px;height:22px;border-color:inherit;border-style:solid}
+.c-tl{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:5px 0 0 0}
+.c-tr{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 5px 0 0}
+.c-bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 5px}
+.c-br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 5px 0}
+
+/* hint text on camera */
+.cam-hint-overlay{position:absolute;bottom:10px;left:0;right:0;text-align:center;pointer-events:none;z-index:11}
+.cam-hint-overlay span{background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:4px 12px;border-radius:20px}
+
+.cam-placeholder{height:56vw;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);background:#111}
+@media(max-aspect-ratio:1/1){.cam-placeholder{height:72vw}}
 .cam-placeholder p{font-size:13px}
-.camera-controls{padding:12px 14px;display:flex;gap:10px}
 
-/* BUTTONS */
-.btn{border:none;border-radius:10px;font-size:14px;font-weight:600;padding:11px 16px;cursor:pointer;transition:transform .15s;display:flex;align-items:center;gap:7px}
-.btn:active{transform:scale(.96)}
-.btn-green{background:var(--accent);color:#000;flex:1}
-.btn-orange{background:var(--orange);color:#000;flex:1}
-.btn-stop{background:var(--surface2);color:var(--danger);border:1px solid var(--border);flex:1}
-.btn-icon{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:11px 14px}
-.btn-xls{background:#1a7a3a;color:#fff}
-.btn-trash{background:transparent;color:var(--danger);border:1px solid #3a2020;padding:10px 12px}
+.cam-controls{padding:10px 12px;display:flex;gap:10px;background:var(--surface)}
 
-/* INFO */
-.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px;display:block}
-.barcode-big{font-family:'Courier New',monospace;font-size:18px;font-weight:700;letter-spacing:1.5px;word-break:break-all}
-.barcode-big.green{color:var(--accent)}
-.barcode-big.orange{color:var(--orange)}
+/* ── BUTTONS ──────────────────────────── */
+.btn{border:none;border-radius:10px;font-size:14px;font-weight:600;padding:11px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity .1s}
+.btn:active{opacity:.75}
+.btn.g{background:var(--accent);color:#000;flex:1}
+.btn.o{background:var(--orange);color:#000;flex:1}
+.btn.stop{background:var(--surface2);color:var(--danger);border:1px solid var(--border);flex:1}
+.btn.ico{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:11px 13px}
+.btn.xls{background:#1a7a3a;color:#fff}
+.btn.del{background:transparent;color:var(--danger);border:1px solid #3a2020;padding:10px 11px}
 
-/* BOX STATUS */
-.box-status{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:14px;display:none}
-.box-status.show{display:block}
-.box-status-row{display:flex;align-items:center;gap:10px}
-.box-dot{width:10px;height:10px;border-radius:50%;background:var(--orange);flex-shrink:0;animation:pulse 1.5s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* ── CARDS ────────────────────────────── */
+.card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:13px}
+.lbl{font-size:10px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);margin-bottom:5px;display:block}
+.bc-big{font-family:'Courier New',monospace;font-size:17px;font-weight:700;letter-spacing:1px;word-break:break-all}
+.bc-big.g{color:var(--accent)}
+.bc-big.o{color:var(--orange)}
+
+/* box status bar */
+.box-bar{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:12px 14px;display:none}
+.box-bar.on{display:block}
+.box-bar-row{display:flex;align-items:center;gap:10px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--orange);flex-shrink:0;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 .box-bc{font-family:'Courier New',monospace;font-size:14px;font-weight:700;color:var(--orange);flex:1;word-break:break-all}
-.box-count{font-size:12px;color:var(--muted);white-space:nowrap}
-.change-box-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--orange);font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;white-space:nowrap}
-.change-box-btn:active{opacity:.7}
+.box-cnt{font-size:12px;color:var(--muted);white-space:nowrap}
+.chg-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--orange);font-size:12px;font-weight:600;padding:5px 11px;cursor:pointer;white-space:nowrap}
+.chg-btn:active{opacity:.7}
 
-/* SCAN RESULT */
-.scan-result{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:14px;display:none}
-.scan-result.show{display:block}
+/* qty input panel */
+.qty-panel{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:13px;display:none}
+.qty-panel.on{display:block}
 .qty-row{display:flex;gap:10px;align-items:center;margin-top:10px}
-.qty-label{font-size:14px;color:var(--muted);white-space:nowrap}
-.qty-ctrl{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-.qty-btn{width:40px;height:40px;background:transparent;border:none;color:var(--accent);font-size:20px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.qty-btn:active{background:var(--surface)}
-.qty-inp{width:60px;height:40px;background:transparent;border:none;border-left:1px solid var(--border);border-right:1px solid var(--border);color:var(--text);font-size:16px;font-weight:600;text-align:center;outline:none}
-.qty-inp::-webkit-inner-spin-button,.qty-inp::-webkit-outer-spin-button{-webkit-appearance:none}
-.btn-add{background:var(--accent);color:#000;border:none;border-radius:10px;font-size:14px;font-weight:700;padding:0 16px;height:40px;cursor:pointer;flex:1}
-.btn-add:active{opacity:.85}
+.ql{font-size:14px;color:var(--muted);white-space:nowrap}
+.qc{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.qb{width:40px;height:40px;background:transparent;border:none;color:var(--accent);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.qb:active{background:var(--surface)}
+.qi{width:62px;height:40px;background:transparent;border:none;border-left:1px solid var(--border);border-right:1px solid var(--border);color:var(--text);font-size:16px;font-weight:600;text-align:center;outline:none}
+.qi::-webkit-inner-spin-button,.qi::-webkit-outer-spin-button{-webkit-appearance:none}
+.add-btn{background:var(--accent);color:#000;border:none;border-radius:10px;font-size:14px;font-weight:700;padding:0 14px;height:40px;cursor:pointer;flex:1}
+.add-btn:active{opacity:.82}
 
-/* MANUAL */
-.manual-section{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:14px}
-.manual-row{display:flex;gap:8px}
-.text-input{background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;padding:10px 12px;outline:none;transition:border-color .15s}
-.text-input:focus{border-color:var(--accent)}
-.text-input::placeholder{color:var(--muted)}
-.text-input.mono{font-family:'Courier New',monospace;letter-spacing:1px}
+/* manual */
+.manual{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:13px}
+.man-row{display:flex;gap:8px}
+.ti{background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;padding:10px 11px;outline:none}
+.ti:focus{border-color:var(--accent)}
+.ti::placeholder{color:var(--muted)}
+.ti.mono{font-family:'Courier New',monospace;letter-spacing:1px}
 
-/* LIST */
-.list-section{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
-.list-header{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface2)}
-.list-actions{display:flex;gap:8px}
-.list-table-wrap{overflow-x:auto}
+/* step indicator */
+.step-row{display:flex;gap:8px;align-items:center;padding:9px 13px;background:var(--surface2);border-radius:10px;font-size:13px}
+.pip{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background .2s}
+.pip.act{background:var(--orange)}
+.pip.done{background:var(--accent)}
+.step-txt{color:var(--muted)}
+.step-txt b{color:var(--text);font-weight:600}
+
+/* ── LIST ─────────────────────────────── */
+.list-wrap{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden}
+.list-hdr{padding:10px 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface2)}
+.list-acts{display:flex;gap:8px}
+.tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{background:var(--surface2);padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
+thead th{background:var(--surface2);padding:8px 11px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
 tbody tr{border-bottom:1px solid var(--border)}
 tbody tr:last-child{border-bottom:none}
-tbody tr:active{background:var(--surface2)}
-td{padding:10px 12px;vertical-align:middle}
-.td-num{font-size:11px;color:var(--muted);width:24px}
-.td-bc{font-family:'Courier New',monospace;font-size:12px;letter-spacing:.5px;color:var(--accent)}
-.td-bc-box{font-family:'Courier New',monospace;font-size:12px;color:var(--orange)}
-.td-qty{font-weight:700;font-size:15px;text-align:center;width:50px}
-.td-del{text-align:center;width:36px}
-.del-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px 6px;border-radius:6px;line-height:1}
-.del-btn:active{color:var(--danger)}
-.empty-state{text-align:center;padding:36px 20px;color:var(--muted)}
-.empty-state p{font-size:13px;margin-top:10px}
+td{padding:9px 11px;vertical-align:middle}
+.tn{font-size:11px;color:var(--muted);width:22px}
+.tbc{font-family:'Courier New',monospace;font-size:12px;color:var(--accent)}
+.tbo{font-family:'Courier New',monospace;font-size:12px;color:var(--orange)}
+.tq{font-weight:700;font-size:15px;text-align:center;width:52px;cursor:pointer;color:var(--text)}
+.tq:hover{color:var(--accent)}
+.tq-inp{width:52px;height:32px;background:var(--surface2);border:1px solid var(--accent);border-radius:7px;color:var(--text);font-size:14px;font-weight:700;text-align:center;outline:none}
+.tq-inp::-webkit-inner-spin-button,.tq-inp::-webkit-outer-spin-button{-webkit-appearance:none}
+.tdel{text-align:center;width:34px}
+.dbtn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:3px 5px;line-height:1;border-radius:5px}
+.dbtn:active{color:var(--danger)}
+.empty{text-align:center;padding:34px 18px;color:var(--muted)}
+.empty p{font-size:13px;margin-top:9px}
 
-/* STEP */
-.step-indicator{display:flex;gap:8px;align-items:center;padding:10px 14px;background:var(--surface2);border-radius:10px;font-size:13px}
-.step-pip{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background .2s}
-.step-pip.active{background:var(--orange)}
-.step-pip.done{background:var(--accent)}
-.step-text{color:var(--muted)}
-.step-text strong{color:var(--text)}
-
-/* TOAST / FLASH */
-.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--accent);color:#000;padding:10px 20px;border-radius:30px;font-size:14px;font-weight:600;opacity:0;transition:all .25s;z-index:999;white-space:nowrap;pointer-events:none}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ── TOAST / FLASH ────────────────────── */
+.toast{position:fixed;top:66px;left:50%;transform:translateX(-50%) translateY(-16px);background:var(--accent);color:#000;padding:9px 18px;border-radius:28px;font-size:14px;font-weight:600;opacity:0;transition:all .22s;z-index:999;white-space:nowrap;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.err{background:var(--danger);color:#fff}
-.toast.info{background:var(--blue);color:#fff}
-.flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9999;transition:opacity .08s}
-.flash.active{opacity:0.25}
-.safe-bottom{height:28px}
-
-@media(min-width:500px){.main{max-width:480px;margin:0 auto;padding:20px}.home{max-width:480px;margin:0 auto}}
+.toast.nfo{background:var(--blue);color:#fff}
+.flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9999;transition:opacity .07s}
+.flash.on{opacity:.22}
 </style>
 </head>
 <body>
-<div class="flash" id="flash"></div>
+<div class="flash" id="fl"></div>
 <div class="toast" id="toast"></div>
 
-<!-- HOME -->
-<div class="home" id="home-screen">
+<!-- ══ HOME ══════════════════════════════ -->
+<div id="home" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:18px">
   <div class="home-logo">
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5">
-      <rect x="2" y="4" width="3" height="16" rx="0.5"/><rect x="7" y="4" width="1.5" height="16" rx="0.5"/>
-      <rect x="10.5" y="4" width="3" height="16" rx="0.5"/><rect x="15.5" y="4" width="1.5" height="16" rx="0.5"/>
-      <rect x="18.5" y="4" width="3" height="16" rx="0.5"/>
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5">
+      <rect x="2" y="4" width="3" height="16" rx=".5"/><rect x="7" y="4" width="1.5" height="16" rx=".5"/>
+      <rect x="10.5" y="4" width="3" height="16" rx=".5"/><rect x="15.5" y="4" width="1.5" height="16" rx=".5"/>
+      <rect x="18.5" y="4" width="3" height="16" rx=".5"/>
     </svg>
   </div>
   <div class="home-title">Сканер штрихкодов</div>
   <div class="home-sub">Выберите режим работы</div>
+
   <button class="mode-btn" onclick="openMode('inv')">
-    <div class="mode-icon inv">
+    <div class="mode-icon mi-inv">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00e5a0" stroke-width="2">
         <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
         <rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
       </svg>
     </div>
     <div><div class="mode-text-title">Инвентаризация</div><div class="mode-text-sub">Сканирование и подсчёт товаров</div></div>
-    <div class="mode-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div>
+    <div class="mode-arrow"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div>
   </button>
+
   <button class="mode-btn" onclick="openMode('box')">
-    <div class="mode-icon box">
+    <div class="mode-icon mi-box">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff8c42" stroke-width="2">
         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
         <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
       </svg>
     </div>
     <div><div class="mode-text-title">Распределение по коробам</div><div class="mode-text-sub">Привязка товаров к коробам</div></div>
-    <div class="mode-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div>
+    <div class="mode-arrow"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div>
   </button>
 </div>
 
-<!-- ИНВЕНТАРИЗАЦИЯ -->
-<div class="app-screen" id="inv-screen">
+<!-- ══ ИНВЕНТАРИЗАЦИЯ ════════════════════ -->
+<div class="screen" id="inv">
   <header>
-    <div class="back-btn" onclick="goHome('inv')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="back" onclick="goHome('inv')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></div>
     <h1>Инвентаризация</h1>
-    <div class="count-badge" id="inv-count">0</div>
+    <div class="badge g" id="inv-cnt">0</div>
   </header>
   <div class="main">
-    <div class="camera-card">
-      <div class="cam-wrap" id="inv-cam-wrap">
-        <video id="inv-video" autoplay playsinline muted></video>
-        <div class="scan-frame-overlay">
-          <div class="scan-frame">
-            <div class="scan-line"></div>
-            <div class="sc sc-tl"></div><div class="sc sc-tr"></div>
-            <div class="sc sc-bl"></div><div class="sc sc-br"></div>
-          </div>
-        </div>
-      </div>
-      <div class="cam-placeholder" id="inv-cam-ph">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3">
+
+    <!-- camera -->
+    <div class="cam-card" id="inv-cam-card">
+      <div id="inv-ph" class="cam-placeholder">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.28">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
         </svg>
         <p>Нажмите «Сканировать»</p>
       </div>
-      <div class="camera-controls">
-        <button class="btn btn-green" id="inv-btn-scan" onclick="startScan('inv')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Сканировать
-        </button>
-        <button class="btn btn-stop" id="inv-btn-stop" onclick="stopScan('inv')" style="display:none">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-          Стоп
-        </button>
-        <button class="btn btn-icon" onclick="toggleManual('inv')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
+      <video id="inv-vid" autoplay playsinline muted style="display:none"></video>
+      <div class="cam-overlay" id="inv-overlay" style="display:none">
+        <div class="scan-box" id="inv-sbox">
+          <div class="scan-line"></div>
+          <div class="corner c-tl"></div><div class="corner c-tr"></div>
+          <div class="corner c-bl"></div><div class="corner c-br"></div>
+        </div>
       </div>
+      <div class="cam-hint-overlay" id="inv-hint" style="display:none"><span>Наведите на штрихкод</span></div>
     </div>
-    <div class="scan-result" id="inv-result">
+    <div class="cam-controls" style="border-radius:0 0 var(--r) var(--r);overflow:hidden">
+      <button class="btn g" id="inv-scan-btn" onclick="camStart('inv')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Сканировать
+      </button>
+      <button class="btn stop" id="inv-stop-btn" onclick="camStop('inv')" style="display:none">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        Стоп
+      </button>
+      <button class="btn ico" onclick="toggleMan('inv')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- result -->
+    <div class="qty-panel" id="inv-res">
       <span class="lbl">Последнее сканирование</span>
-      <div class="barcode-big green" id="inv-barcode-display">—</div>
+      <div class="bc-big g" id="inv-bc">—</div>
       <div class="qty-row">
-        <span class="qty-label">Кол-во:</span>
-        <div class="qty-ctrl">
-          <button class="qty-btn" onclick="chQty('inv-qty',-1)">−</button>
-          <input type="number" class="qty-inp" id="inv-qty" value="1" min="1" max="9999">
-          <button class="qty-btn" onclick="chQty('inv-qty',1)">+</button>
+        <span class="ql">Кол-во:</span>
+        <div class="qc">
+          <button class="qb" onclick="dq('inv-q',-1)">−</button>
+          <input class="qi" type="number" id="inv-q" value="1" min="1" max="9999">
+          <button class="qb" onclick="dq('inv-q',1)">+</button>
         </div>
-        <button class="btn-add" onclick="invAddItem()">Добавить ✓</button>
+        <button class="add-btn" onclick="invAdd()">Добавить ✓</button>
       </div>
     </div>
-    <div class="manual-section" id="inv-manual" style="display:none">
+
+    <!-- manual -->
+    <div class="manual" id="inv-man" style="display:none">
       <span class="lbl">Ручной ввод</span>
-      <div class="manual-row">
-        <input class="text-input mono" style="flex:2" type="tel" id="inv-manual-bc" maxlength="20" placeholder="Штрихкод">
-        <input class="text-input" style="flex:0 0 70px;text-align:center" type="number" id="inv-manual-qty" value="1" min="1" placeholder="Кол">
-        <button class="btn btn-green" onclick="invAddManual()" style="padding:10px 14px;flex-shrink:0">+</button>
+      <div class="man-row">
+        <input class="ti mono" style="flex:2" type="tel" id="inv-mbc" maxlength="20" placeholder="Штрихкод">
+        <input class="ti" style="flex:0 0 68px;text-align:center" type="number" id="inv-mq" value="1" min="1">
+        <button class="btn g" onclick="invManAdd()" style="padding:10px 13px;flex-shrink:0">+</button>
       </div>
     </div>
-    <div class="list-section">
-      <div class="list-header">
+
+    <!-- list -->
+    <div class="list-wrap">
+      <div class="list-hdr">
         <span class="lbl" style="margin:0">Список товаров</span>
-        <div class="list-actions">
-          <button class="btn btn-xls" onclick="invExport()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            XLS
-          </button>
-          <button class="btn btn-trash" onclick="invClear()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-          </button>
+        <div class="list-acts">
+          <button class="btn xls" onclick="invExport()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>XLS</button>
+          <button class="btn del" onclick="invClear()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
         </div>
       </div>
-      <div class="list-table-wrap">
+      <div class="tbl-wrap">
         <table><thead><tr><th>#</th><th>Баркод</th><th style="text-align:center">Кол-во</th><th></th></tr></thead>
-        <tbody id="inv-list-body"></tbody></table>
+        <tbody id="inv-body"></tbody></table>
       </div>
     </div>
-    <div class="safe-bottom"></div>
   </div>
 </div>
 
-<!-- РАСПРЕДЕЛЕНИЕ ПО КОРОБАМ -->
-<div class="app-screen" id="box-screen">
+<!-- ══ РАСПРЕДЕЛЕНИЕ ПО КОРОБАМ ══════════ -->
+<div class="screen" id="box">
   <header>
-    <div class="back-btn" onclick="goHome('box')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="back" onclick="goHome('box')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></div>
     <h1>По коробам</h1>
-    <div class="count-badge orange" id="box-count">0</div>
+    <div class="badge o" id="box-cnt">0</div>
   </header>
   <div class="main">
-    <div class="step-indicator" id="box-step-indicator">
-      <div class="step-pip active" id="step-pip-1"></div>
-      <div class="step-pip" id="step-pip-2"></div>
-      <div class="step-text" id="box-step-text"><strong>Шаг 1:</strong> Отсканируйте штрихкод короба</div>
+
+    <div class="step-row">
+      <div class="pip act" id="p1"></div>
+      <div class="pip" id="p2"></div>
+      <div class="step-txt" id="step-txt"><b>Шаг 1:</b> Отсканируйте штрихкод короба</div>
     </div>
-    <div class="camera-card">
-      <div class="cam-wrap" id="box-cam-wrap">
-        <video id="box-video" autoplay playsinline muted></video>
-        <div class="scan-frame-overlay">
-          <div class="scan-frame" id="box-scan-frame">
-            <div class="scan-line" id="box-scan-line"></div>
-            <div class="sc sc-tl" id="bsc-tl"></div><div class="sc sc-tr" id="bsc-tr"></div>
-            <div class="sc sc-bl" id="bsc-bl"></div><div class="sc sc-br" id="bsc-br"></div>
-          </div>
-        </div>
-      </div>
-      <div class="cam-placeholder" id="box-cam-ph">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3">
+
+    <!-- camera -->
+    <div class="cam-card" id="box-cam-card">
+      <div id="box-ph" class="cam-placeholder">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.28">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
         </svg>
-        <p id="box-cam-hint">Нажмите «Сканировать короб»</p>
+        <p id="box-ph-txt">Нажмите «Сканировать короб»</p>
       </div>
-      <div class="camera-controls">
-        <button class="btn btn-orange" id="box-btn-scan" onclick="startScan('box')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <span id="box-btn-label">Сканировать короб</span>
-        </button>
-        <button class="btn btn-stop" id="box-btn-stop" onclick="stopScan('box')" style="display:none">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-          Стоп
-        </button>
-        <button class="btn btn-icon" onclick="toggleManual('box')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
+      <video id="box-vid" autoplay playsinline muted style="display:none"></video>
+      <div class="cam-overlay" id="box-overlay" style="display:none">
+        <div class="scan-box" id="box-sbox">
+          <div class="scan-line" id="box-sline"></div>
+          <div class="corner c-tl" id="bc-tl"></div><div class="corner c-tr" id="bc-tr"></div>
+          <div class="corner c-bl" id="bc-bl"></div><div class="corner c-br" id="bc-br"></div>
+        </div>
+      </div>
+      <div class="cam-hint-overlay" id="box-hint" style="display:none"><span id="box-hint-txt">Наведите на штрихкод короба</span></div>
+    </div>
+    <div class="cam-controls" style="border-radius:0 0 var(--r) var(--r);overflow:hidden">
+      <button class="btn o" id="box-scan-btn" onclick="camStart('box')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span id="box-btn-lbl">Сканировать короб</span>
+      </button>
+      <button class="btn stop" id="box-stop-btn" onclick="camStop('box')" style="display:none">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        Стоп
+      </button>
+      <button class="btn ico" onclick="toggleMan('box')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- active box -->
+    <div class="box-bar" id="box-bar">
+      <div class="box-bar-row">
+        <div class="dot"></div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:1px">Активный короб</div>
+          <div class="box-bc" id="box-active">—</div>
+        </div>
+        <div class="box-cnt" id="box-pos">0 поз.</div>
+        <button class="chg-btn" onclick="boxReset()">Сменить</button>
       </div>
     </div>
-    <div class="box-status" id="box-status">
-      <div class="box-status-row">
-        <div class="box-dot"></div>
-        <div><div style="font-size:11px;color:var(--muted);margin-bottom:2px">Активный короб</div>
-        <div class="box-bc" id="box-active-bc">—</div></div>
-        <div class="box-count" id="box-items-count">0 поз.</div>
-        <button class="change-box-btn" onclick="boxReset()">Сменить</button>
-      </div>
-    </div>
-    <div class="scan-result" id="box-result">
+
+    <!-- product result -->
+    <div class="qty-panel" id="box-res">
       <span class="lbl">Товар для короба</span>
-      <div class="barcode-big green" id="box-product-display">—</div>
+      <div class="bc-big g" id="box-prod-bc">—</div>
       <div class="qty-row">
-        <span class="qty-label">Кол-во:</span>
-        <div class="qty-ctrl">
-          <button class="qty-btn" onclick="chQty('box-qty',-1)">−</button>
-          <input type="number" class="qty-inp" id="box-qty" value="1" min="1" max="9999">
-          <button class="qty-btn" onclick="chQty('box-qty',1)">+</button>
+        <span class="ql">Кол-во:</span>
+        <div class="qc">
+          <button class="qb" onclick="dq('box-q',-1)">−</button>
+          <input class="qi" type="number" id="box-q" value="1" min="1" max="9999">
+          <button class="qb" onclick="dq('box-q',1)">+</button>
         </div>
-        <button class="btn-add" onclick="boxAddItem()">Добавить ✓</button>
+        <button class="add-btn" onclick="boxAdd()">Добавить ✓</button>
       </div>
     </div>
-    <div class="manual-section" id="box-manual" style="display:none">
-      <span class="lbl" id="box-manual-label">Ручной ввод — короб</span>
-      <div class="manual-row">
-        <input class="text-input mono" style="flex:2" type="tel" id="box-manual-bc" maxlength="30" placeholder="Штрихкод">
-        <input class="text-input" style="flex:0 0 70px;text-align:center;display:none" type="number" id="box-manual-qty" value="1" min="1" placeholder="Кол">
-        <button class="btn btn-orange" id="box-manual-btn" onclick="boxManualAction()" style="padding:10px 14px;flex-shrink:0">OK</button>
+
+    <!-- manual -->
+    <div class="manual" id="box-man" style="display:none">
+      <span class="lbl" id="box-man-lbl">Ручной ввод — короб</span>
+      <div class="man-row">
+        <input class="ti mono" style="flex:2" type="tel" id="box-mbc" maxlength="30" placeholder="Штрихкод">
+        <input class="ti" style="flex:0 0 68px;text-align:center;display:none" type="number" id="box-mq" value="1" min="1" placeholder="Кол">
+        <button class="btn o" id="box-man-btn" onclick="boxManAction()" style="padding:10px 13px;flex-shrink:0">OK</button>
       </div>
     </div>
-    <div class="list-section">
-      <div class="list-header">
+
+    <!-- list -->
+    <div class="list-wrap">
+      <div class="list-hdr">
         <span class="lbl" style="margin:0">Список</span>
-        <div class="list-actions">
-          <button class="btn btn-xls" onclick="boxExport()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            XLS
-          </button>
-          <button class="btn btn-trash" onclick="boxClear()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-          </button>
+        <div class="list-acts">
+          <button class="btn xls" onclick="boxExport()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>XLS</button>
+          <button class="btn del" onclick="boxClear()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
         </div>
       </div>
-      <div class="list-table-wrap">
+      <div class="tbl-wrap">
         <table><thead><tr><th>#</th><th>Баркод товара</th><th style="text-align:center">Кол-во</th><th>ШК короба</th><th>Срок годн.</th><th></th></tr></thead>
-        <tbody id="box-list-body"></tbody></table>
+        <tbody id="box-body"></tbody></table>
       </div>
     </div>
-    <div class="safe-bottom"></div>
   </div>
 </div>
 
 <script>
-// ============================================================
-// BEEP — Web Audio API (работает без файлов)
-// ============================================================
-let audioCtx = null;
+/* ═══════════════════════════════════════════
+   BEEP — Safari-совместимый
+   Вызываем resume() при каждом касании
+═══════════════════════════════════════════ */
+let AC = null;
+function getAC() {
+  if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  return AC;
+}
+// Разблокируем AudioContext при первом касании
+document.addEventListener('touchstart', () => {
+  try { const ac = getAC(); if (ac.state === 'suspended') ac.resume(); } catch(e){}
+}, { passive: true });
+document.addEventListener('click', () => {
+  try { const ac = getAC(); if (ac.state === 'suspended') ac.resume(); } catch(e){}
+}, { passive: true });
+
 function beep() {
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    const ac = getAC();
+    if (ac.state === 'suspended') ac.resume();
+    const osc = ac.createOscillator();
+    const g   = ac.createGain();
+    osc.connect(g); g.connect(ac.destination);
     osc.type = 'square';
-    osc.frequency.setValueAtTime(1800, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.08);
-    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
-    osc.start(audioCtx.currentTime);
-    osc.stop(audioCtx.currentTime + 0.13);
+    osc.frequency.setValueAtTime(1900, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1100, ac.currentTime + 0.1);
+    g.gain.setValueAtTime(0.15, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.13);
+    osc.start(ac.currentTime);
+    osc.stop(ac.currentTime + 0.14);
   } catch(e) {}
 }
 
-// Unlock AudioContext on first user gesture
-document.addEventListener('touchstart', () => {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-}, { once: false, passive: true });
-
-// ============================================================
-// UTILS
-// ============================================================
-function toast(msg, type) {
+/* ═══════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════ */
+function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'toast show' + (type ? ' '+type : '');
-  clearTimeout(t._tid);
-  t._tid = setTimeout(() => t.className='toast', 2400);
+  t.className = 'toast on' + (type ? ' '+type : '');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = 'toast', 2400);
 }
-function flashScreen() {
-  const f = document.getElementById('flash');
-  f.classList.add('active');
-  setTimeout(() => f.classList.remove('active'), 100);
+function flash() {
+  const f = document.getElementById('fl');
+  f.classList.add('on');
+  setTimeout(() => f.classList.remove('on'), 100);
 }
 function vib(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch(e){} }
-function dateStamp() {
+function dq(id, d) {
+  const el = document.getElementById(id);
+  el.value = Math.max(1, (parseInt(el.value)||1) + d);
+}
+function ds() {
   const d = new Date();
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
 }
-function chQty(id, d) {
-  const inp = document.getElementById(id);
-  inp.value = Math.max(1, (parseInt(inp.value)||1) + d);
-}
 
-// ============================================================
-// ZXING SCANNER ENGINE
-// ============================================================
-// Все форматы которые поддерживает ZXing
-const ALL_FORMATS = [
-  ZXing.BarcodeFormat.EAN_13,
-  ZXing.BarcodeFormat.EAN_8,
-  ZXing.BarcodeFormat.CODE_128,
-  ZXing.BarcodeFormat.CODE_39,
-  ZXing.BarcodeFormat.CODE_93,
-  ZXing.BarcodeFormat.CODABAR,
-  ZXing.BarcodeFormat.DATA_MATRIX,
-  ZXing.BarcodeFormat.ITF,
-  ZXing.BarcodeFormat.PDF_417,
-  ZXing.BarcodeFormat.QR_CODE,
-  ZXing.BarcodeFormat.UPC_A,
-  ZXing.BarcodeFormat.UPC_E,
-  ZXing.BarcodeFormat.RSS_14,
-  ZXing.BarcodeFormat.RSS_EXPANDED,
+/* ═══════════════════════════════════════════
+   CAMERA ENGINE — чистый getUserMedia + ZXing
+   Полностью пересоздаём stream при каждом запуске
+═══════════════════════════════════════════ */
+const ALL_FMT = [
+  ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
+  ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
+  ZXing.BarcodeFormat.CODE_93, ZXing.BarcodeFormat.CODABAR,
+  ZXing.BarcodeFormat.DATA_MATRIX, ZXing.BarcodeFormat.ITF,
+  ZXing.BarcodeFormat.PDF_417, ZXing.BarcodeFormat.QR_CODE,
+  ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E,
+  ZXing.BarcodeFormat.RSS_14, ZXing.BarcodeFormat.RSS_EXPANDED,
 ];
 
-// Создаём reader с hints для всех форматов и повышенной точностью
-function createReader() {
-  const hints = new Map();
-  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, ALL_FORMATS);
-  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-  hints.set(ZXing.DecodeHintType.CHARACTER_SET, 'UTF-8');
-  return new ZXing.BrowserMultiFormatReader(hints, {
-    delayBetweenScanAttempts: 80,      // быстрее сканируем
-    delayBetweenScanSuccess: 1500,
-  });
-}
+const CAM = { inv: { stream: null, reader: null, running: false, lastCode: '', lastTime: 0 },
+               box: { stream: null, reader: null, running: false, lastCode: '', lastTime: 0 } };
 
-// Состояние сканеров
-const state = {
-  inv:  { reader: null, scanning: false, stream: null },
-  box:  { reader: null, scanning: false, stream: null },
-};
+async function camStart(mode) {
+  const c = CAM[mode];
+  if (c.running) return;
 
-async function startScan(mode) {
-  const s = state[mode];
-  if (s.scanning) return;
-
-  // Разблокируем AudioContext при нажатии
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  // Разблокируем audio при нажатии кнопки
+  try { const ac = getAC(); if (ac.state === 'suspended') ac.resume(); } catch(e){}
 
   try {
-    s.reader = createReader();
-    const videoId = mode === 'inv' ? 'inv-video' : 'box-video';
-
-    // Получаем список камер и выбираем заднюю с высоким разрешением
-    const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
-    let deviceId;
-    if (devices.length > 0) {
-      // Предпочитаем заднюю камеру
-      const back = devices.find(d => /back|rear|environment|main/i.test(d.label));
-      deviceId = back ? back.deviceId : devices[devices.length - 1].deviceId;
-    }
-
-    // Запрашиваем максимальное разрешение для лучшего распознавания
+    // 1. Получаем видеопоток с высоким разрешением
     const constraints = {
       video: {
-        deviceId: deviceId ? { exact: deviceId } : undefined,
-        facingMode: deviceId ? undefined : { ideal: 'environment' },
-        width:  { ideal: 1920, min: 1280 },
-        height: { ideal: 1080, min: 720 },
-        focusMode: { ideal: 'continuous' },
-        advanced: [{ focusMode: 'continuous' }],
+        facingMode: { ideal: 'environment' },
+        width:  { ideal: 1920 },
+        height: { ideal: 1080 },
+        advanced: [{ focusMode: 'continuous' }, { zoom: 1 }]
       }
     };
+    c.stream = await navigator.mediaDevices.getUserMedia(constraints);
 
-    // Показываем камеру
-    document.getElementById(mode+'-cam-ph').style.display = 'none';
-    document.getElementById(mode+'-cam-wrap').classList.add('active');
-    document.getElementById(mode+'-btn-scan').style.display = 'none';
-    document.getElementById(mode+'-btn-stop').style.display = '';
+    // 2. Показываем видео
+    const vid = document.getElementById(mode+'-vid');
+    vid.srcObject = c.stream;
+    await vid.play();
+    vid.style.display = 'block';
+    document.getElementById(mode+'-ph').style.display = 'none';
+    document.getElementById(mode+'-overlay').style.display = 'flex';
+    document.getElementById(mode+'-hint').style.display = 'block';
+    document.getElementById(mode+'-scan-btn').style.display = 'none';
+    document.getElementById(mode+'-stop-btn').style.display = '';
+    c.running = true;
 
-    const callback = (result, err) => {
-      if (result) {
-        const code = result.getText();
-        onScanResult(mode, code);
-      }
-    };
+    // 3. Создаём ZXing reader
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, ALL_FMT);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    hints.set(ZXing.DecodeHintType.CHARACTER_SET, 'UTF-8');
+    c.reader = new ZXing.BrowserMultiFormatReader(hints, {
+      delayBetweenScanAttempts: 80,
+      delayBetweenScanSuccess: 1500,
+    });
 
-    await s.reader.decodeFromConstraints(constraints, videoId, callback);
-    s.scanning = true;
+    // 4. Декодируем через canvas — без HTMLVideoElement API
+    scanLoop(mode, vid);
 
   } catch(e) {
-    let msg = e + '';
+    let msg = String(e);
     if (/NotAllowed|Permission|denied/i.test(msg)) msg = 'Нет доступа к камере. Разрешите в настройках.';
-    else if (/NotFound|Devices/i.test(msg)) msg = 'Камера не найдена.';
-    else msg = 'Ошибка камеры: ' + msg.substring(0, 60);
-    toast(msg, 'err');
-    resetCamUI(mode);
+    else if (/NotFound/i.test(msg)) msg = 'Камера не найдена.';
+    else msg = 'Ошибка: ' + msg.slice(0, 70);
+    showToast(msg, 'err');
+    camStop(mode);
   }
 }
 
-function stopScan(mode) {
-  const s = state[mode];
-  if (s.reader) {
-    try { s.reader.reset(); } catch(e) {}
-    s.reader = null;
+// Сканирующий цикл через offscreen canvas
+function scanLoop(mode, vid) {
+  const c = CAM[mode];
+  if (!c.running) return;
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  function tick() {
+    if (!c.running) return;
+    if (vid.readyState >= 2 && vid.videoWidth > 0) {
+      canvas.width  = vid.videoWidth;
+      canvas.height = vid.videoHeight;
+      ctx.drawImage(vid, 0, 0);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      try {
+        const lum = new ZXing.RGBLuminanceSource(imgData.data, canvas.width, canvas.height);
+        const bmp = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum));
+        const result = c.reader.decodeBitmap(bmp);
+        if (result) {
+          const code = result.getText();
+          const now = Date.now();
+          if (code !== c.lastCode || now - c.lastTime > 2000) {
+            c.lastCode = code;
+            c.lastTime = now;
+            beep();
+            flash();
+            vib([30, 20, 30]);
+            camStop(mode);
+            onCode(mode, code);
+            return;
+          }
+        }
+      } catch(e) { /* не найдено — продолжаем */ }
+    }
+    requestAnimationFrame(tick);
   }
-  s.scanning = false;
-  resetCamUI(mode);
+  requestAnimationFrame(tick);
 }
 
-function resetCamUI(mode) {
-  document.getElementById(mode+'-cam-ph').style.display = '';
-  document.getElementById(mode+'-cam-wrap').classList.remove('active');
-  document.getElementById(mode+'-btn-scan').style.display = '';
-  document.getElementById(mode+'-btn-stop').style.display = 'none';
-  // Сбрасываем видео
-  const vid = document.getElementById(mode === 'inv' ? 'inv-video' : 'box-video');
-  if (vid && vid.srcObject) {
-    vid.srcObject.getTracks().forEach(t => t.stop());
-    vid.srcObject = null;
+function camStop(mode) {
+  const c = CAM[mode];
+  c.running = false;
+  if (c.stream) {
+    c.stream.getTracks().forEach(t => { try { t.stop(); } catch(e){} });
+    c.stream = null;
   }
+  if (c.reader) {
+    try { c.reader.reset(); } catch(e){}
+    c.reader = null;
+  }
+  const vid = document.getElementById(mode+'-vid');
+  vid.srcObject = null;
+  vid.style.display = 'none';
+  document.getElementById(mode+'-ph').style.display = '';
+  document.getElementById(mode+'-overlay').style.display = 'none';
+  document.getElementById(mode+'-hint').style.display = 'none';
+  document.getElementById(mode+'-scan-btn').style.display = '';
+  document.getElementById(mode+'-stop-btn').style.display = 'none';
+  c.lastCode = ''; c.lastTime = 0;
 }
 
-// Дедупликация результатов
-const lastScan = { inv: { code:'', time:0 }, box: { code:'', time:0 } };
-
-function onScanResult(mode, code) {
-  const ls = lastScan[mode];
-  const now = Date.now();
-  // Игнорируем повтор того же кода в течение 2 сек
-  if (code === ls.code && now - ls.time < 2000) return;
-  ls.code = code;
-  ls.time = now;
-
-  beep();
-  flashScreen();
-  vib([30, 20, 30]);
-  stopScan(mode);
-
-  if (mode === 'inv') {
-    invOnCode(code);
-  } else {
-    boxOnCode(code);
-  }
+function onCode(mode, code) {
+  if (mode === 'inv') invOnCode(code);
+  else boxOnCode(code);
 }
 
-// ============================================================
-// HOME
-// ============================================================
+/* ═══════════════════════════════════════════
+   HOME
+═══════════════════════════════════════════ */
 function openMode(mode) {
-  document.getElementById('home-screen').style.display = 'none';
-  document.getElementById(mode+'-screen').classList.add('active');
+  document.getElementById('home').style.display = 'none';
+  document.getElementById(mode).classList.add('on');
 }
 function goHome(mode) {
-  stopScan(mode);
-  document.getElementById(mode+'-screen').classList.remove('active');
-  document.getElementById('home-screen').style.display = '';
+  camStop(mode);
+  document.getElementById(mode).classList.remove('on');
+  document.getElementById('home').style.display = '';
 }
 
-// ============================================================
-// ИНВЕНТАРИЗАЦИЯ
-// ============================================================
+/* ═══════════════════════════════════════════
+   ИНВЕНТАРИЗАЦИЯ
+═══════════════════════════════════════════ */
 let invItems = [];
-let invCurrentBarcode = null;
+let invCur = null;
 
 function invOnCode(code) {
-  invCurrentBarcode = code;
-  document.getElementById('inv-barcode-display').textContent = code;
-  document.getElementById('inv-qty').value = 1;
-  document.getElementById('inv-result').classList.add('show');
+  invCur = code;
+  document.getElementById('inv-bc').textContent = code;
+  document.getElementById('inv-q').value = 1;
+  document.getElementById('inv-res').classList.add('on');
 }
 
-function invAddItem() {
-  if (!invCurrentBarcode) return;
-  const qty = parseInt(document.getElementById('inv-qty').value) || 1;
-  const ex = invItems.find(i => i.barcode === invCurrentBarcode);
-  if (ex) { ex.qty += qty; toast('Обновлено: +'+qty+' шт'); }
-  else { invItems.push({ barcode: invCurrentBarcode, qty }); toast('Добавлено ✓'); }
-  vib(60);
-  invRenderList();
-  document.getElementById('inv-result').classList.remove('show');
-  invCurrentBarcode = null;
+function invAdd() {
+  if (!invCur) return;
+  const qty = parseInt(document.getElementById('inv-q').value) || 1;
+  const ex = invItems.find(i => i.bc === invCur);
+  if (ex) { ex.qty += qty; showToast('Обновлено: +'+qty+' шт'); }
+  else { invItems.push({ bc: invCur, qty }); showToast('Добавлено ✓'); }
+  vib(60); invRender();
+  document.getElementById('inv-res').classList.remove('on');
+  invCur = null;
 }
 
-function toggleManual(mode) {
-  const el = document.getElementById(mode+'-manual');
+function toggleMan(mode) {
+  const el = document.getElementById(mode+'-man');
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
   if (el.style.display === 'block') {
-    if (mode === 'box') updateBoxManualUI();
-    document.getElementById(mode+'-manual-bc').focus();
+    if (mode === 'box') updBoxManUI();
+    document.getElementById(mode+'-mbc').focus();
   }
 }
 
-function invAddManual() {
-  const bc = document.getElementById('inv-manual-bc').value.trim();
-  const qty = parseInt(document.getElementById('inv-manual-qty').value) || 1;
-  if (!bc || bc.length < 2) { toast('Введите штрихкод','err'); return; }
-  const ex = invItems.find(i => i.barcode === bc);
-  if (ex) { ex.qty += qty; toast('Обновлено: +'+qty+' шт'); }
-  else { invItems.push({ barcode: bc, qty }); toast('Добавлено ✓'); }
+function invManAdd() {
+  const bc  = document.getElementById('inv-mbc').value.trim();
+  const qty = parseInt(document.getElementById('inv-mq').value) || 1;
+  if (!bc) { showToast('Введите штрихкод','err'); return; }
+  const ex = invItems.find(i => i.bc === bc);
+  if (ex) { ex.qty += qty; showToast('Обновлено: +'+qty+' шт'); }
+  else { invItems.push({ bc, qty }); showToast('Добавлено ✓'); }
   vib(60);
-  document.getElementById('inv-manual-bc').value = '';
-  document.getElementById('inv-manual-qty').value = 1;
-  invRenderList();
-  document.getElementById('inv-manual-bc').focus();
+  document.getElementById('inv-mbc').value = '';
+  document.getElementById('inv-mq').value = 1;
+  invRender(); document.getElementById('inv-mbc').focus();
+}
+document.getElementById('inv-mbc').addEventListener('keydown', e => { if (e.key==='Enter') invManAdd(); });
+document.getElementById('inv-q').addEventListener('keydown',   e => { if (e.key==='Enter') invAdd(); });
+
+// Редактирование количества прямо в таблице
+function invStartEdit(idx) {
+  const td = document.getElementById('inv-tq-'+idx);
+  const cur = invItems[idx].qty;
+  td.innerHTML = `<input class="tq-inp" id="inv-ei-${idx}" type="number" value="${cur}" min="1" max="9999" autofocus>`;
+  const inp = document.getElementById('inv-ei-'+idx);
+  inp.focus(); inp.select();
+  inp.addEventListener('blur',  () => invSaveEdit(idx));
+  inp.addEventListener('keydown', e => { if (e.key==='Enter') inp.blur(); if (e.key==='Escape') invRender(); });
+}
+function invSaveEdit(idx) {
+  const inp = document.getElementById('inv-ei-'+idx);
+  if (!inp) return;
+  const v = parseInt(inp.value);
+  if (v > 0) { invItems[idx].qty = v; showToast('Количество изменено'); }
+  invRender();
 }
 
-document.getElementById('inv-manual-bc').addEventListener('keydown', e => { if (e.key==='Enter') invAddManual(); });
-document.getElementById('inv-qty').addEventListener('keydown', e => { if (e.key==='Enter') invAddItem(); });
+function invDelItem(i) { if (confirm('Удалить?')) { invItems.splice(i,1); invRender(); } }
+function invClear()    { if (!invItems.length) return; if (confirm('Очистить список?')) { invItems=[]; invRender(); showToast('Список очищен'); } }
 
-function invDeleteItem(i) { if (confirm('Удалить строку?')) { invItems.splice(i,1); invRenderList(); } }
-function invClear() {
-  if (!invItems.length) return;
-  if (confirm('Очистить весь список?')) { invItems=[]; invRenderList(); toast('Список очищен'); }
-}
-
-function invRenderList() {
-  const body = document.getElementById('inv-list-body');
-  document.getElementById('inv-count').textContent = invItems.length;
+function invRender() {
+  const b = document.getElementById('inv-body');
+  document.getElementById('inv-cnt').textContent = invItems.length;
   if (!invItems.length) {
-    body.innerHTML = `<tr><td colspan="4"><div class="empty-state">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.25">
-        <rect x="2" y="4" width="3" height="16" rx="0.5"/><rect x="7" y="4" width="1.5" height="16" rx="0.5"/>
-        <rect x="10.5" y="4" width="3" height="16" rx="0.5"/><rect x="15.5" y="4" width="1.5" height="16" rx="0.5"/>
-        <rect x="18.5" y="4" width="3" height="16" rx="0.5"/>
-      </svg><p>Список пуст</p></div></td></tr>`;
+    b.innerHTML = `<tr><td colspan="4"><div class="empty"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.22"><rect x="2" y="4" width="3" height="16" rx=".5"/><rect x="7" y="4" width="1.5" height="16" rx=".5"/><rect x="10.5" y="4" width="3" height="16" rx=".5"/><rect x="15.5" y="4" width="1.5" height="16" rx=".5"/><rect x="18.5" y="4" width="3" height="16" rx=".5"/></svg><p>Список пуст</p></div></td></tr>`;
     return;
   }
-  body.innerHTML = invItems.map((item,i) => `
-    <tr><td class="td-num">${i+1}</td><td class="td-bc">${item.barcode}</td>
-    <td class="td-qty">${item.qty}</td>
-    <td class="td-del"><button class="del-btn" onclick="invDeleteItem(${i})">×</button></td></tr>`).join('');
+  b.innerHTML = invItems.map((it,i) => `
+    <tr>
+      <td class="tn">${i+1}</td>
+      <td class="tbc">${it.bc}</td>
+      <td class="tq" id="inv-tq-${i}" onclick="invStartEdit(${i})">${it.qty}</td>
+      <td class="tdel"><button class="dbtn" onclick="invDelItem(${i})">×</button></td>
+    </tr>`).join('');
 }
 
 function invExport() {
-  if (!invItems.length) { toast('Список пуст','err'); return; }
-  const data = [['Баркод','Количество'], ...invItems.map(i=>[i.barcode,i.qty])];
+  if (!invItems.length) { showToast('Список пуст','err'); return; }
   const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:20},{wch:12}];
+  const ws = XLSX.utils.aoa_to_sheet([['Баркод','Количество'], ...invItems.map(i=>[i.bc,i.qty])]);
+  ws['!cols'] = [{wch:22},{wch:12}];
   XLSX.utils.book_append_sheet(wb, ws, 'Инвентаризация');
-  XLSX.writeFile(wb, `inventory_${dateStamp()}.xlsx`);
-  toast('Файл сохранён ✓');
-  vib([40,20,40,20,80]);
+  XLSX.writeFile(wb, `inventory_${ds()}.xlsx`);
+  showToast('Файл сохранён ✓'); vib([40,20,40,20,80]);
 }
 
-invRenderList();
+invRender();
 
-// ============================================================
-// РАСПРЕДЕЛЕНИЕ ПО КОРОБАМ
-// ============================================================
-let boxItems = [];
-let boxStep = 'box'; // 'box' | 'product'
+/* ═══════════════════════════════════════════
+   РАСПРЕДЕЛЕНИЕ ПО КОРОБАМ
+═══════════════════════════════════════════ */
+let boxItems  = [];
+let boxStep   = 'box';   // 'box' | 'product'
 let activeBox = null;
-let boxCurrentProduct = null;
+let boxCurProd = null;
 
 function boxOnCode(code) {
   if (boxStep === 'box') {
     activeBox = code;
-    boxStep = 'product';
-    document.getElementById('box-active-bc').textContent = code;
-    document.getElementById('box-status').classList.add('show');
-    updateBoxStepUI();
-    toast('Короб: ' + code, 'info');
-    vib([30,40,60]);
+    boxStep   = 'product';
+    document.getElementById('box-active').textContent = code;
+    document.getElementById('box-bar').classList.add('on');
+    updBoxUI();
+    showToast('Короб: ' + code, 'nfo');
+    vib([25,35,55]);
   } else {
-    boxCurrentProduct = code;
-    document.getElementById('box-product-display').textContent = code;
-    document.getElementById('box-qty').value = 1;
-    document.getElementById('box-result').classList.add('show');
+    boxCurProd = code;
+    document.getElementById('box-prod-bc').textContent = code;
+    document.getElementById('box-q').value = 1;
+    document.getElementById('box-res').classList.add('on');
   }
 }
 
-function updateBoxStepUI() {
+function updBoxUI() {
   const isBox = boxStep === 'box';
-  document.getElementById('step-pip-1').className = 'step-pip' + (isBox?' active':' done');
-  document.getElementById('step-pip-2').className = 'step-pip' + (!isBox?' active':'');
-  document.getElementById('box-step-text').innerHTML = isBox
-    ? '<strong>Шаг 1:</strong> Отсканируйте штрихкод короба'
-    : '<strong>Шаг 2:</strong> Отсканируйте товар';
-  document.getElementById('box-btn-label').textContent = isBox ? 'Сканировать короб' : 'Сканировать товар';
-  document.getElementById('box-btn-scan').className = 'btn '+(isBox?'btn-orange':'btn-green');
-  document.getElementById('box-cam-hint').textContent = isBox ? 'Нажмите «Сканировать короб»' : 'Нажмите «Сканировать товар»';
-  // Frame color
-  const oc = isBox ? 'var(--orange)' : 'var(--accent)';
-  document.getElementById('box-scan-frame').style.borderColor = oc;
-  document.getElementById('box-scan-line').style.background = oc;
-  ['bsc-tl','bsc-tr','bsc-bl','bsc-br'].forEach(id => document.getElementById(id).style.borderColor = oc);
+  document.getElementById('p1').className = 'pip' + (isBox?' act':' done');
+  document.getElementById('p2').className = 'pip' + (!isBox?' act':'');
+  document.getElementById('step-txt').innerHTML = isBox
+    ? '<b>Шаг 1:</b> Отсканируйте штрихкод короба'
+    : '<b>Шаг 2:</b> Отсканируйте товар';
+  document.getElementById('box-btn-lbl').textContent = isBox ? 'Сканировать короб' : 'Сканировать товар';
+  document.getElementById('box-scan-btn').className  = 'btn ' + (isBox ? 'o' : 'g');
+  document.getElementById('box-ph-txt').textContent  = isBox ? 'Нажмите «Сканировать короб»' : 'Нажмите «Сканировать товар»';
+  document.getElementById('box-hint-txt').textContent= isBox ? 'Наведите на штрихкод короба' : 'Наведите на штрихкод товара';
+  const col = isBox ? 'var(--orange)' : 'var(--accent)';
+  document.getElementById('box-sbox').style.borderColor = col;
+  document.getElementById('box-sline').style.background = col;
+  ['bc-tl','bc-tr','bc-bl','bc-br'].forEach(id => document.getElementById(id).style.borderColor = col);
 }
 
 function boxReset() {
-  activeBox = null; boxStep = 'box'; boxCurrentProduct = null;
-  document.getElementById('box-status').classList.remove('show');
-  document.getElementById('box-result').classList.remove('show');
-  updateBoxStepUI();
-  toast('Выберите новый короб','info');
+  activeBox = null; boxStep = 'box'; boxCurProd = null;
+  document.getElementById('box-bar').classList.remove('on');
+  document.getElementById('box-res').classList.remove('on');
+  updBoxUI();
+  showToast('Выберите новый короб','nfo');
 }
 
-function boxAddItem() {
-  if (!boxCurrentProduct || !activeBox) return;
-  const qty = parseInt(document.getElementById('box-qty').value) || 1;
-  boxItems.push({ product: boxCurrentProduct, qty, box: activeBox, expiry: '' });
-  toast('Товар добавлен ✓'); vib(60);
-  boxRenderList();
+function boxAdd() {
+  if (!boxCurProd || !activeBox) return;
+  const qty = parseInt(document.getElementById('box-q').value) || 1;
+  // Ищем существующую пару (товар + короб) и суммируем
+  const ex = boxItems.find(i => i.product === boxCurProd && i.box === activeBox);
+  if (ex) { ex.qty += qty; showToast('Обновлено: +'+qty+' шт'); }
+  else     { boxItems.push({ product: boxCurProd, qty, box: activeBox, expiry: '' }); showToast('Товар добавлен ✓'); }
+  vib(60); boxRender();
   const cnt = boxItems.filter(i=>i.box===activeBox).length;
-  document.getElementById('box-items-count').textContent = cnt+' поз.';
-  document.getElementById('box-result').classList.remove('show');
-  boxCurrentProduct = null;
+  document.getElementById('box-pos').textContent = cnt+' поз.';
+  document.getElementById('box-res').classList.remove('on');
+  boxCurProd = null;
 }
 
-document.getElementById('box-qty').addEventListener('keydown', e => { if (e.key==='Enter') boxAddItem(); });
+document.getElementById('box-q').addEventListener('keydown', e => { if (e.key==='Enter') boxAdd(); });
 
-function updateBoxManualUI() {
+function updBoxManUI() {
   const isBox = boxStep === 'box';
-  document.getElementById('box-manual-label').textContent = isBox ? 'Ручной ввод — короб' : 'Ручной ввод — товар';
-  document.getElementById('box-manual-bc').placeholder = isBox ? 'ШК короба' : 'ШК товара';
-  document.getElementById('box-manual-qty').style.display = isBox ? 'none' : '';
-  document.getElementById('box-manual-btn').className = 'btn '+(isBox?'btn-orange':'btn-green');
+  document.getElementById('box-man-lbl').textContent = isBox ? 'Ручной ввод — короб' : 'Ручной ввод — товар';
+  document.getElementById('box-mbc').placeholder     = isBox ? 'ШК короба' : 'ШК товара';
+  document.getElementById('box-mq').style.display    = isBox ? 'none' : '';
+  document.getElementById('box-man-btn').className   = 'btn ' + (isBox ? 'o' : 'g');
 }
 
-function boxManualAction() {
-  const bc = document.getElementById('box-manual-bc').value.trim();
-  if (!bc || bc.length < 2) { toast('Введите штрихкод','err'); return; }
-  beep(); vib([30,20,30]);
+function boxManAction() {
+  const bc = document.getElementById('box-mbc').value.trim();
+  if (!bc) { showToast('Введите штрихкод','err'); return; }
+  beep(); vib([25,20,25]);
   if (boxStep === 'box') {
     boxOnCode(bc);
-    updateBoxManualUI();
+    updBoxManUI();
   } else {
-    const qty = parseInt(document.getElementById('box-manual-qty').value) || 1;
-    boxItems.push({ product: bc, qty, box: activeBox, expiry: '' });
-    toast('Товар добавлен ✓'); vib(60);
-    boxRenderList();
+    const qty = parseInt(document.getElementById('box-mq').value) || 1;
+    const ex  = boxItems.find(i => i.product === bc && i.box === activeBox);
+    if (ex) { ex.qty += qty; showToast('Обновлено: +'+qty+' шт'); }
+    else    { boxItems.push({ product: bc, qty, box: activeBox, expiry: '' }); showToast('Товар добавлен ✓'); }
+    vib(60); boxRender();
     const cnt = boxItems.filter(i=>i.box===activeBox).length;
-    document.getElementById('box-items-count').textContent = cnt+' поз.';
+    document.getElementById('box-pos').textContent = cnt+' поз.';
   }
-  document.getElementById('box-manual-bc').value = '';
-  document.getElementById('box-manual-qty').value = 1;
-  document.getElementById('box-manual-bc').focus();
+  document.getElementById('box-mbc').value = '';
+  document.getElementById('box-mq').value  = 1;
+  document.getElementById('box-mbc').focus();
+}
+document.getElementById('box-mbc').addEventListener('keydown', e => { if (e.key==='Enter') boxManAction(); });
+
+// Редактирование количества в таблице
+function boxStartEdit(idx) {
+  const td = document.getElementById('box-tq-'+idx);
+  const cur = boxItems[idx].qty;
+  td.innerHTML = `<input class="tq-inp" id="box-ei-${idx}" type="number" value="${cur}" min="1" max="9999" autofocus>`;
+  const inp = document.getElementById('box-ei-'+idx);
+  inp.focus(); inp.select();
+  inp.addEventListener('blur',    () => boxSaveEdit(idx));
+  inp.addEventListener('keydown', e => { if (e.key==='Enter') inp.blur(); if (e.key==='Escape') boxRender(); });
+}
+function boxSaveEdit(idx) {
+  const inp = document.getElementById('box-ei-'+idx);
+  if (!inp) return;
+  const v = parseInt(inp.value);
+  if (v > 0) { boxItems[idx].qty = v; showToast('Количество изменено'); }
+  boxRender();
 }
 
-document.getElementById('box-manual-bc').addEventListener('keydown', e => { if (e.key==='Enter') boxManualAction(); });
-
-function boxDeleteItem(i) { if (confirm('Удалить строку?')) { boxItems.splice(i,1); boxRenderList(); } }
-function boxClear() {
+function boxDelItem(i) { if (confirm('Удалить?')) { boxItems.splice(i,1); boxRender(); } }
+function boxClear()    {
   if (!boxItems.length) return;
-  if (confirm('Очистить весь список?')) { boxItems=[]; boxRenderList(); boxReset(); toast('Список очищен'); }
+  if (confirm('Очистить список?')) { boxItems=[]; boxRender(); boxReset(); showToast('Список очищен'); }
 }
 
-function boxRenderList() {
-  const body = document.getElementById('box-list-body');
-  document.getElementById('box-count').textContent = boxItems.length;
+function boxRender() {
+  const b = document.getElementById('box-body');
+  document.getElementById('box-cnt').textContent = boxItems.length;
   if (!boxItems.length) {
-    body.innerHTML = `<tr><td colspan="6"><div class="empty-state">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.25">
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-      </svg><p>Список пуст. Начните со сканирования короба.</p></div></td></tr>`;
+    b.innerHTML = `<tr><td colspan="6"><div class="empty"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.22"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><p>Список пуст. Начните со сканирования короба.</p></div></td></tr>`;
     return;
   }
-  body.innerHTML = boxItems.map((item,i) => `
-    <tr><td class="td-num">${i+1}</td>
-    <td class="td-bc">${item.product}</td>
-    <td class="td-qty">${item.qty}</td>
-    <td class="td-bc-box">${item.box}</td>
-    <td style="font-size:12px;color:var(--muted)">${item.expiry||'—'}</td>
-    <td class="td-del"><button class="del-btn" onclick="boxDeleteItem(${i})">×</button></td></tr>`).join('');
+  b.innerHTML = boxItems.map((it,i) => `
+    <tr>
+      <td class="tn">${i+1}</td>
+      <td class="tbc">${it.product}</td>
+      <td class="tq" id="box-tq-${i}" onclick="boxStartEdit(${i})">${it.qty}</td>
+      <td class="tbo">${it.box}</td>
+      <td style="font-size:11px;color:var(--muted)">${it.expiry||'—'}</td>
+      <td class="tdel"><button class="dbtn" onclick="boxDelItem(${i})">×</button></td>
+    </tr>`).join('');
 }
 
 function boxExport() {
-  if (!boxItems.length) { toast('Список пуст','err'); return; }
-  const data = [
-    ['Баркод товара','Кол-во товаров','ШК короба','Срок годности'],
-    ...boxItems.map(i=>[i.product, i.qty, i.box, i.expiry||''])
-  ];
+  if (!boxItems.length) { showToast('Список пуст','err'); return; }
   const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:20},{wch:14},{wch:20},{wch:14}];
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['Баркод товара','Кол-во товаров','ШК короба','Срок годности'],
+    ...boxItems.map(i=>[i.product,i.qty,i.box,i.expiry||''])
+  ]);
+  ws['!cols'] = [{wch:22},{wch:14},{wch:22},{wch:14}];
   XLSX.utils.book_append_sheet(wb, ws, 'По коробам');
-  XLSX.writeFile(wb, `boxes_${dateStamp()}.xlsx`);
-  toast('Файл сохранён ✓');
-  vib([40,20,40,20,80]);
+  XLSX.writeFile(wb, `boxes_${ds()}.xlsx`);
+  showToast('Файл сохранён ✓'); vib([40,20,40,20,80]);
 }
 
-boxRenderList();
-updateBoxStepUI();
+boxRender();
+updBoxUI();
 </script>
 </body>
 </html>
