@@ -61,32 +61,9 @@ header h1{font-size:16px;font-weight:600}
   .cam-card video{ height:72vw; }
 }
 
-.cam-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:10}
-
-/* Рамка сканирования — вертикальная для баркодов */
-.scan-box{
-  width:82%;
-  height:36%;
-  border:2px solid var(--accent);
-  border-radius:10px;
-  box-shadow:0 0 0 9999px rgba(0,0,0,.55);
-  position:relative;
-}
-.scan-box.org{border-color:var(--orange)}
-
-.scan-line{position:absolute;left:4px;right:4px;top:12%;height:2px;border-radius:1px;background:var(--accent);opacity:.95;animation:scanY 1.5s ease-in-out infinite}
-.scan-line.org{background:var(--orange)}
-@keyframes scanY{0%,100%{top:12%}50%{top:82%}}
-
-.corner{position:absolute;width:22px;height:22px;border-color:inherit;border-style:solid}
-.c-tl{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:5px 0 0 0}
-.c-tr{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 5px 0 0}
-.c-bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 5px}
-.c-br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 5px 0}
-
 /* hint text on camera */
 .cam-hint-overlay{position:absolute;bottom:10px;left:0;right:0;text-align:center;pointer-events:none;z-index:11}
-.cam-hint-overlay span{background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:4px 12px;border-radius:20px}
+.cam-hint-overlay span{background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 12px;border-radius:20px}
 
 .cam-placeholder{height:56vw;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);background:#111}
 @media(max-aspect-ratio:1/1){.cam-placeholder{height:72vw}}
@@ -240,13 +217,7 @@ td{padding:9px 11px;vertical-align:middle}
         <p>Нажмите «Сканировать»</p>
       </div>
       <video id="inv-vid" autoplay playsinline muted style="display:none"></video>
-      <div class="cam-overlay" id="inv-overlay" style="display:none">
-        <div class="scan-box" id="inv-sbox">
-          <div class="scan-line"></div>
-          <div class="corner c-tl"></div><div class="corner c-tr"></div>
-          <div class="corner c-bl"></div><div class="corner c-br"></div>
-        </div>
-      </div>
+      <div id="inv-overlay" style="display:none"></div>
       <div class="cam-hint-overlay" id="inv-hint" style="display:none"><span>Наведите на штрихкод</span></div>
     </div>
     <div class="cam-controls" style="border-radius:0 0 var(--r) var(--r);overflow:hidden">
@@ -332,13 +303,7 @@ td{padding:9px 11px;vertical-align:middle}
         <p id="box-ph-txt">Нажмите «Сканировать короб»</p>
       </div>
       <video id="box-vid" autoplay playsinline muted style="display:none"></video>
-      <div class="cam-overlay" id="box-overlay" style="display:none">
-        <div class="scan-box" id="box-sbox">
-          <div class="scan-line" id="box-sline"></div>
-          <div class="corner c-tl" id="bc-tl"></div><div class="corner c-tr" id="bc-tr"></div>
-          <div class="corner c-bl" id="bc-bl"></div><div class="corner c-br" id="bc-br"></div>
-        </div>
-      </div>
+      <div id="box-overlay" style="display:none"></div>
       <div class="cam-hint-overlay" id="box-hint" style="display:none"><span id="box-hint-txt">Наведите на штрихкод короба</span></div>
     </div>
     <div class="cam-controls" style="border-radius:0 0 var(--r) var(--r);overflow:hidden">
@@ -494,34 +459,9 @@ async function camStart(mode) {
   const c = CAM[mode];
   if (c.running) return;
 
-  // Разблокируем audio при нажатии кнопки
   try { const ac = getAC(); if (ac.state === 'suspended') ac.resume(); } catch(e){}
 
   try {
-    // 1. Получаем видеопоток с высоким разрешением
-    const constraints = {
-      video: {
-        facingMode: { ideal: 'environment' },
-        width:  { ideal: 1920 },
-        height: { ideal: 1080 },
-        advanced: [{ focusMode: 'continuous' }, { zoom: 1 }]
-      }
-    };
-    c.stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-    // 2. Показываем видео
-    const vid = document.getElementById(mode+'-vid');
-    vid.srcObject = c.stream;
-    await vid.play();
-    vid.style.display = 'block';
-    document.getElementById(mode+'-ph').style.display = 'none';
-    document.getElementById(mode+'-overlay').style.display = 'flex';
-    document.getElementById(mode+'-hint').style.display = 'block';
-    document.getElementById(mode+'-scan-btn').style.display = 'none';
-    document.getElementById(mode+'-stop-btn').style.display = '';
-    c.running = true;
-
-    // 3. Создаём ZXing reader
     const hints = new Map();
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, ALL_FMT);
     hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
@@ -531,8 +471,36 @@ async function camStart(mode) {
       delayBetweenScanSuccess: 1500,
     });
 
-    // 4. Декодируем через canvas — без HTMLVideoElement API
-    scanLoop(mode, vid);
+    // Выбираем заднюю камеру
+    const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+    let deviceId;
+    if (devices.length > 0) {
+      const back = devices.find(d => /back|rear|environment/i.test(d.label));
+      deviceId = (back || devices[devices.length - 1]).deviceId;
+    }
+
+    const vidId = mode + '-vid';
+    const vid = document.getElementById(vidId);
+    vid.style.display = 'block';
+    document.getElementById(mode+'-ph').style.display = 'none';
+    document.getElementById(mode+'-hint').style.display = 'block';
+    document.getElementById(mode+'-scan-btn').style.display = 'none';
+    document.getElementById(mode+'-stop-btn').style.display = '';
+    c.running = true;
+
+    await c.reader.decodeFromVideoDevice(deviceId || null, vidId, (result, err) => {
+      if (!result || !c.running) return;
+      const code = result.getText();
+      const now = Date.now();
+      if (code === c.lastCode && now - c.lastTime < 2000) return;
+      c.lastCode = code;
+      c.lastTime = now;
+      beep();
+      flash();
+      vib([30, 20, 30]);
+      camStop(mode);
+      onCode(mode, code);
+    });
 
   } catch(e) {
     let msg = String(e);
@@ -544,62 +512,21 @@ async function camStart(mode) {
   }
 }
 
-// Сканирующий цикл через offscreen canvas
-function scanLoop(mode, vid) {
-  const c = CAM[mode];
-  if (!c.running) return;
-
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-  function tick() {
-    if (!c.running) return;
-    if (vid.readyState >= 2 && vid.videoWidth > 0) {
-      canvas.width  = vid.videoWidth;
-      canvas.height = vid.videoHeight;
-      ctx.drawImage(vid, 0, 0);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      try {
-        const lum = new ZXing.RGBLuminanceSource(imgData.data, canvas.width, canvas.height);
-        const bmp = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum));
-        const result = c.reader.decodeBitmap(bmp);
-        if (result) {
-          const code = result.getText();
-          const now = Date.now();
-          if (code !== c.lastCode || now - c.lastTime > 2000) {
-            c.lastCode = code;
-            c.lastTime = now;
-            beep();
-            flash();
-            vib([30, 20, 30]);
-            camStop(mode);
-            onCode(mode, code);
-            return;
-          }
-        }
-      } catch(e) { /* не найдено — продолжаем */ }
-    }
-    requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-}
-
 function camStop(mode) {
   const c = CAM[mode];
   c.running = false;
-  if (c.stream) {
-    c.stream.getTracks().forEach(t => { try { t.stop(); } catch(e){} });
-    c.stream = null;
-  }
   if (c.reader) {
     try { c.reader.reset(); } catch(e){}
     c.reader = null;
   }
+  // Останавливаем треки напрямую через видео-элемент
   const vid = document.getElementById(mode+'-vid');
-  vid.srcObject = null;
-  vid.style.display = 'none';
+  if (vid && vid.srcObject) {
+    vid.srcObject.getTracks().forEach(t => { try { t.stop(); } catch(e){} });
+    vid.srcObject = null;
+  }
+  if (vid) vid.style.display = 'none';
   document.getElementById(mode+'-ph').style.display = '';
-  document.getElementById(mode+'-overlay').style.display = 'none';
   document.getElementById(mode+'-hint').style.display = 'none';
   document.getElementById(mode+'-scan-btn').style.display = '';
   document.getElementById(mode+'-stop-btn').style.display = 'none';
@@ -757,10 +684,6 @@ function updBoxUI() {
   document.getElementById('box-scan-btn').className  = 'btn ' + (isBox ? 'o' : 'g');
   document.getElementById('box-ph-txt').textContent  = isBox ? 'Нажмите «Сканировать короб»' : 'Нажмите «Сканировать товар»';
   document.getElementById('box-hint-txt').textContent= isBox ? 'Наведите на штрихкод короба' : 'Наведите на штрихкод товара';
-  const col = isBox ? 'var(--orange)' : 'var(--accent)';
-  document.getElementById('box-sbox').style.borderColor = col;
-  document.getElementById('box-sline').style.background = col;
-  ['bc-tl','bc-tr','bc-bl','bc-br'].forEach(id => document.getElementById(id).style.borderColor = col);
 }
 
 function boxReset() {
